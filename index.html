@@ -231,37 +231,36 @@
 // --- NOUVELLE FONCTION DE PREVISUALISATION ---
     document.getElementById('previewBtn').addEventListener('click', () => {
       const combinedData = { ...senderData, ...currentRecipient };
-      const blob = generateSingleDoc(combinedData);
       
-      if (blob) {
+      // demander un arraybuffer au lieu d'un blob
+      const docData = generateSingleDoc(combinedData, "arraybuffer"); 
+      
+      if (docData) {
         const modal = document.getElementById('preview-modal');
         const container = document.getElementById('preview-container');
         
-        // Afficher la modale avec un message de chargement
         modal.style.display = 'block';
         container.innerHTML = '<div style="margin-top:50px; font-weight:bold; color:#000091;">Génération de la prévisualisation en cours...</div>';
         
         try {
-          // Utiliser docx-preview pour dessiner le blob
-          // On passe 'container' deux fois (pour le corps et le style) pour éviter les bugs
-          docx.renderAsync(blob, container, container, {
+          docx.renderAsync(docData, container, container, {
             className: "docx", 
             inWrapper: true, 
             ignoreWidth: false, 
             ignoreHeight: false, 
-            ignoreFonts: true, // <-- LA SOLUTION EST ICI : on ignore la police du docx
+            ignoreFonts: true, // Toujours ignorer pour éviter le blocage des polices
             breakPages: true, 
           })
           .then(() => {
-            console.log("Prévisualisation générée avec succès");
+            console.log("Prévisualisation générée avec succès !");
           })
           .catch(err => {
             console.error("Erreur docx-preview :", err);
-            container.innerHTML = `<div style="color:#ce0500; background:#ffe8e5; padding:20px; border-radius:8px; margin-top:50px;"><b>Erreur lors du rendu de la prévisualisation :</b> ${err.message}</div>`;
+            container.innerHTML = `<div style="color:#ce0500; background:#ffe8e5; padding:20px; margin-top:50px;"><b>Erreur lors du rendu :</b> ${err.message}</div>`;
           });
         } catch (syncErr) {
           console.error("Erreur critique :", syncErr);
-          container.innerHTML = `<div style="color:#ce0500; background:#ffe8e5; padding:20px; border-radius:8px; margin-top:50px;"><b>Erreur critique (Le fichier docx-preview.js est-il bien le vrai code ?) :</b> ${syncErr.message}</div>`;
+          container.innerHTML = `<div style="color:#ce0500; background:#ffe8e5; padding:20px; margin-top:50px;"><b>Erreur critique :</b> ${syncErr.message}</div>`;
         }
       }
     });
@@ -296,14 +295,19 @@
       }
     });
 
-    function generateSingleDoc(data) {
+    function generateSingleDoc(data, format = "blob") {
       try {
         const zip = new PizZip(templateBinary);
         const doc = new window.docxtemplater(zip, { paragraphLoop: true, linebreaks: true, delimiters: { start: '{{', end: '}}' } });
         doc.render(data);
-        return doc.getZip().generate({ type: "blob", mimeType: "application/vnd.openxmlformats-officedocument.wordprocessingml.document" });
+        // On retourne le document dans le format demandé (blob par défaut, ou arraybuffer pour la prévisualisation)
+        return doc.getZip().generate({ 
+          type: format, 
+          mimeType: "application/vnd.openxmlformats-officedocument.wordprocessingml.document" 
+        });
       } catch (error) {
-        showError("❌ Erreur lors de la fusion du document."); return null;
+        showError("❌ Erreur lors de la fusion du document."); 
+        return null;
       }
     }
 
