@@ -6,11 +6,11 @@
   
   <script src="https://docs.getgrist.com/grist-plugin-api.js"></script>
   
-  <script src="https://docs.getgrist.com/grist-plugin-api.js"></script>
   <script src="pizzip.min.js"></script>
   <script src="docxtemplater.js"></script>
   <script src="jszip.min.js"></script>
   <script src="FileSaver.min.js"></script>
+  <script src="docx-preview.min.js"></script>
 
   <style>
     @font-face { font-family: 'Marianne'; src: url('Marianne-Regular.woff2') format('woff2'); font-weight: normal; }
@@ -63,6 +63,29 @@
     .btn-generate:hover { background-color: #1212ff; }
     
     #log { margin-top: 15px; font-size: 13px; font-weight: bold; }
+
+    /* NOUVEAU : Styles pour la fenêtre de prévisualisation */
+    #preview-modal {
+      display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+      background: rgba(0,0,0,0.6); z-index: 1000; padding: 15px; box-sizing: border-box;
+    }
+    .modal-content {
+      background: #ececec; width: 100%; height: 100%; border-radius: 8px;
+      display: flex; flex-direction: column; overflow: hidden; box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+    }
+    .modal-header {
+      padding: 10px 20px; background: white; border-bottom: 1px solid #ddd;
+      display: flex; justify-content: space-between; align-items: center;
+    }
+    .modal-header h3 { margin: 0; color: #000091; font-size: 16px; }
+    .btn-close {
+      background: #ce0500; color: white; border: none; padding: 8px 15px;
+      border-radius: 4px; cursor: pointer; font-weight: bold; flex: none; width: auto;
+    }
+    .btn-close:hover { background: #a00400; }
+    #preview-container {
+      flex: 1; overflow-y: auto; padding: 20px; display: flex; justify-content: center;
+    }
   </style>
 </head>
 <body>
@@ -75,8 +98,6 @@
     <div class="form-group">
       <label for="templateFile">1. Chargez votre modèle Word (.docx)</label>
       <input type="file" id="templateFile" accept=".docx">
-      <small style="color: #666; display: block; margin-top: 5px;">Utilisez le format {{Nom_Variable}} dans votre document.</small>
-      
       <button id="analyzeBtn" class="btn-analyze">Lancer l'analyse du document</button>
     </div>
 
@@ -84,11 +105,7 @@
       <label>2. Vérification des variables (Ligne sélectionnée)</label>
       <table id="varTable">
         <thead>
-          <tr>
-            <th>Variable détectée</th>
-            <th>Valeur actuelle</th>
-            <th>Statut</th>
-          </tr>
+          <tr><th>Variable</th><th>Valeur</th><th>Statut</th></tr>
         </thead>
         <tbody></tbody>
       </table>
@@ -98,6 +115,17 @@
         <button id="generateAllBtn" class="btn-generate">📥 Générer TOUT (.zip)</button>
       </div>
       <div id="log"></div>
+    </div>
+  </div>
+
+  <div id="preview-modal">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h3>Prévisualisation (Données actuelles)</h3>
+        <button class="btn-close" id="closePreviewBtn">Fermer</button>
+      </div>
+      <div id="preview-container">
+        </div>
     </div>
   </div>
 
@@ -116,7 +144,6 @@
       const box = document.getElementById('error-box');
       box.style.display = 'block';
       box.innerHTML = htmlMessage;
-      console.error(htmlMessage);
     }
 
     function clearError() {
@@ -136,10 +163,7 @@
       const fileInput = document.getElementById('templateFile');
       const file = fileInput.files[0];
       
-      if (!file) {
-        showError("⚠️ Veuillez d'abord sélectionner un fichier .docx.");
-        return;
-      }
+      if (!file) { showError("⚠️ Veuillez sélectionner un fichier."); return; }
 
       const reader = new FileReader();
       reader.onload = async function(event) {
@@ -148,29 +172,23 @@
         try {
           const zip = new PizZip(templateBinary);
           const doc = new window.docxtemplater(zip, { 
-            paragraphLoop: true, 
-            linebreaks: true,
-            delimiters: { start: '{{', end: '}}' }
+            paragraphLoop: true, linebreaks: true, delimiters: { start: '{{', end: '}}' }
           });
           
           const text = doc.getFullText();
           const regex = /\{\{\s*([^{}]+?)\s*\}\}/g;
           const vars = new Set();
           let match;
-          while ((match = regex.exec(text)) !== null) {
-            vars.add(match[1].trim());
-          }
+          while ((match = regex.exec(text)) !== null) { vars.add(match[1].trim()); }
           
           variablesInTemplate = Array.from(vars);
           document.getElementById('checker-section').style.display = 'block';
 
           await fetchGristDataAndRefresh();
-
         } catch(err) {
-          showError(`❌ <b>Erreur de lecture du Word :</b> ${err.message}.`);
+          showError(`❌ <b>Erreur :</b> ${err.message}`);
         }
       };
-      
       reader.readAsArrayBuffer(file);
     });
 
@@ -178,14 +196,10 @@
       try {
         const rawSender = await grist.docApi.fetchTable(TABLE_EXPEDITEUR);
         const senders = formatGristData(rawSender);
-        if(senders.length > 0) {
-          senderData = senders[0];
-        } else {
-          showError(`⚠️ La table <b>${TABLE_EXPEDITEUR}</b> est vide.`);
-        }
+        if(senders.length > 0) senderData = senders[0];
         updateCheckerUI();
       } catch (err) {
-        showError(`❌ <b>Bloqué par Grist. Impossible de lire la table "${TABLE_EXPEDITEUR}".</b><br><br>Vérifiez que l'ID est bien "${TABLE_EXPEDITEUR}".`);
+        showError(`❌ Bloqué par Grist. ID ou droits de la table ${TABLE_EXPEDITEUR} incorrects.`);
       }
     }
 
@@ -193,46 +207,63 @@
       if (!templateBinary) return;
       const tbody = document.querySelector('#varTable tbody');
       tbody.innerHTML = '';
-
       const combinedData = { ...senderData, ...currentRecipient };
 
       variablesInTemplate.forEach(variable => {
         const tr = document.createElement('tr');
-        const tdName = document.createElement('td');
-        tdName.textContent = `{{${variable}}}`;
-        
+        const tdName = document.createElement('td'); tdName.textContent = `{{${variable}}}`;
         const tdValue = document.createElement('td');
         const tdStatus = document.createElement('td');
-        
         let value = combinedData[variable];
 
         if (value === undefined || value === null || value === '') {
-          tdValue.textContent = "(Vide)";
-          tdValue.style.color = "#999";
-          tdStatus.innerHTML = '<span class="status-missing">❌ Manquant</span>';
+          tdValue.textContent = "(Vide)"; tdStatus.innerHTML = '<span class="status-missing">❌</span>';
         } else if (Array.isArray(value) && value[0] === "L") {
-          tdValue.textContent = `[Réf. ID: ${value[1]}]`;
-          tdStatus.innerHTML = '<span class="status-warn">⚠️ Ref. brute</span>';
+          tdValue.textContent = `[ID: ${value[1]}]`; tdStatus.innerHTML = '<span class="status-warn">⚠️</span>';
         } else {
-          tdValue.textContent = value;
-          tdStatus.innerHTML = '<span class="status-ok">✅ Trouvé</span>';
+          tdValue.textContent = value; tdStatus.innerHTML = '<span class="status-ok">✅</span>';
         }
-
-        tr.appendChild(tdName);
-        tr.appendChild(tdValue);
-        tr.appendChild(tdStatus);
+        tr.appendChild(tdName); tr.appendChild(tdValue); tr.appendChild(tdStatus);
         tbody.appendChild(tr);
       });
     }
 
+    // --- NOUVELLE FONCTION DE PREVISUALISATION ---
     document.getElementById('previewBtn').addEventListener('click', () => {
       const combinedData = { ...senderData, ...currentRecipient };
       const blob = generateSingleDoc(combinedData);
+      
       if (blob) {
-        const identifier = currentRecipient.Nom || currentRecipient.Name || 'Previsualisation';
-        saveAs(blob, `Doc_${identifier}.docx`);
-        logMessage("✅ Prévisualisation téléchargée.", "status-ok");
+        const modal = document.getElementById('preview-modal');
+        const container = document.getElementById('preview-container');
+        
+        // Afficher la modale avec un message de chargement
+        modal.style.display = 'block';
+        container.innerHTML = '<div style="margin-top:50px; font-weight:bold; color:#000091;">Génération de la prévisualisation en cours...</div>';
+        
+        // Utiliser docx-preview pour dessiner le blob dans la div
+        docx.renderAsync(blob, container, null, {
+          className: "docx", // Classe CSS par défaut
+          inWrapper: true, // Ajoute un fond gris et une page blanche centrée
+          ignoreWidth: false, // Respecte la largeur de la page Word
+          ignoreHeight: false, // Respecte la hauteur
+          ignoreFonts: false, // Essaie de respecter les polices
+          breakPages: true, // Respecte les sauts de page
+        })
+        .then(() => {
+          console.log("Prévisualisation générée avec succès");
+        })
+        .catch(err => {
+          console.error(err);
+          container.innerHTML = '<div style="color:red; margin-top:50px;">Erreur lors du rendu de la prévisualisation.</div>';
+        });
       }
+    });
+
+    // Fermer la prévisualisation
+    document.getElementById('closePreviewBtn').addEventListener('click', () => {
+      document.getElementById('preview-modal').style.display = 'none';
+      document.getElementById('preview-container').innerHTML = ''; // Nettoyer
     });
 
     document.getElementById('generateAllBtn').addEventListener('click', async () => {
@@ -255,33 +286,27 @@
         saveAs(zipContent, "Publipostage_Documents.zip");
         logMessage(`✅ Archive ZIP générée avec ${allRecipients.length} documents.`, "status-ok");
       } catch (err) {
-        showError(`❌ Erreur lors de la lecture de la table "${TABLE_DESTINATAIRES}".`);
+        showError(`❌ Erreur table "${TABLE_DESTINATAIRES}".`);
       }
     });
 
     function generateSingleDoc(data) {
       try {
         const zip = new PizZip(templateBinary);
-        const doc = new window.docxtemplater(zip, {
-          paragraphLoop: true, linebreaks: true, delimiters: { start: '{{', end: '}}' }
-        });
+        const doc = new window.docxtemplater(zip, { paragraphLoop: true, linebreaks: true, delimiters: { start: '{{', end: '}}' } });
         doc.render(data);
         return doc.getZip().generate({ type: "blob", mimeType: "application/vnd.openxmlformats-officedocument.wordprocessingml.document" });
       } catch (error) {
-        showError("❌ Erreur lors de la fusion du document.");
-        return null;
+        showError("❌ Erreur lors de la fusion du document."); return null;
       }
     }
 
     function formatGristData(gristData) {
-      const rows = [];
-      const keys = Object.keys(gristData);
+      const rows = []; const keys = Object.keys(gristData);
       if (keys.length === 0 || !gristData[keys[0]]) return rows;
       const numRows = gristData[keys[0]].length;
       for (let i = 0; i < numRows; i++) {
-        const row = {};
-        for (const key of keys) { row[key] = gristData[key][i]; }
-        rows.push(row);
+        const row = {}; for (const key of keys) { row[key] = gristData[key][i]; } rows.push(row);
       }
       return rows;
     }
