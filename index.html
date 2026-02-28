@@ -24,7 +24,6 @@
     }
     h2 { margin-top: 0; font-size: 18px; color: #000091; border-bottom: 2px solid #000091; padding-bottom: 10px; }
     
-    /* ENCART D'ERREUR */
     #error-box {
       display: none; background-color: #ffe8e5; color: #ce0500;
       padding: 15px; border-left: 4px solid #ce0500; margin-bottom: 20px;
@@ -54,6 +53,8 @@
       cursor: pointer; font-size: 14px; font-weight: bold;
       font-family: 'Marianne', sans-serif; transition: background 0.2s;
     }
+    .btn-analyze { background-color: #f0f0f0; color: #000091; border: 1px solid #000091; margin-top: 10px; width: 100%; }
+    .btn-analyze:hover { background-color: #e3e3fd; }
     .btn-preview { background-color: #e3e3fd; color: #000091; border: 1px solid #000091; }
     .btn-preview:hover { background-color: #c6c6fa; }
     .btn-generate { background-color: #000091; color: white; }
@@ -67,10 +68,14 @@
   <div class="container">
     <h2>Publipostage Word</h2>
     
-    <div id="error-box"></div> <div class="form-group">
+    <div id="error-box"></div>
+
+    <div class="form-group">
       <label for="templateFile">1. Chargez votre modèle Word (.docx)</label>
       <input type="file" id="templateFile" accept=".docx">
       <small style="color: #666; display: block; margin-top: 5px;">Utilisez le format {{Nom_Variable}} dans votre document.</small>
+      
+      <button id="analyzeBtn" class="btn-analyze">Lancer l'analyse du document</button>
     </div>
 
     <div id="checker-section">
@@ -87,7 +92,7 @@
       </table>
 
       <div class="button-group">
-        <button id="previewBtn" class="btn-preview">👁 Prévisualiser (Doc unique)</button>
+        <button id="previewBtn" class="btn-preview">👁 Prévisualiser</button>
         <button id="generateAllBtn" class="btn-generate">📥 Générer TOUT (.zip)</button>
       </div>
       <div id="log"></div>
@@ -110,7 +115,6 @@
       const box = document.getElementById('error-box');
       box.style.display = 'block';
       box.innerHTML = htmlMessage;
-      document.getElementById('checker-section').style.display = 'none';
       console.error(htmlMessage);
     }
 
@@ -126,32 +130,22 @@
       }
     });
 
-    document.getElementById('templateFile').addEventListener('change', async function(e) {
+    // ACTION LIEE AU NOUVEAU BOUTON
+    document.getElementById('analyzeBtn').addEventListener('click', function() {
       clearError();
-      const file = e.target.files[0];
-      if (!file) return;
-
-      // TEST DE CONNEXION GRIST ET RECUPERATION DES EXPEDITEURS
-      try {
-        const rawSender = await grist.docApi.fetchTable(TABLE_EXPEDITEUR);
-        const senders = formatGristData(rawSender);
-        if(senders.length > 0) {
-          senderData = senders[0];
-        } else {
-          showError(`⚠️ La table <b>${TABLE_EXPEDITEUR}</b> est vide. Veuillez y ajouter au moins une ligne.`);
-          return;
-        }
-      } catch (err) {
-        showError(`❌ <b>Impossible de lire la table "${TABLE_EXPEDITEUR}".</b><br><br>
-                   1. Avez-vous mis l'accès du Widget sur <b>"Full"</b> dans le panneau de droite ?<br>
-                   2. L'ID de la table est-il vraiment "${TABLE_EXPEDITEUR}" ? (Allez dans <i>Outils > Code View</i> pour vérifier les vrais noms de vos classes/tables).`);
+      const fileInput = document.getElementById('templateFile');
+      const file = fileInput.files[0];
+      
+      if (!file) {
+        showError("⚠️ Veuillez d'abord sélectionner un fichier .docx en cliquant sur le bouton 'Parcourir...'.");
         return;
       }
 
-      // LECTURE DU FICHIER WORD
+      // 1. On lit le fichier Word localement d'abord
       const reader = new FileReader();
-      reader.onload = function(event) {
+      reader.onload = async function(event) {
         templateBinary = event.target.result;
+        
         try {
           const zip = new PizZip(templateBinary);
           const doc = new window.docxtemplater(zip, { 
@@ -170,16 +164,35 @@
           
           variablesInTemplate = Array.from(vars);
           document.getElementById('checker-section').style.display = 'block';
-          updateCheckerUI();
+
+          // 2. Une fois le document lu, on interroge Grist
+          await fetchGristDataAndRefresh();
 
         } catch(err) {
-          showError(`❌ <b>Erreur de lecture du Word :</b> ${err.message}. Vérifiez que le fichier est bien un .docx valide.`);
+          showError(`❌ <b>Erreur de lecture du Word :</b> ${err.message}. Le fichier est peut-être corrompu.`);
         }
       };
       
-      // Utilisation de ArrayBuffer (plus stable sur tous les navigateurs)
       reader.readAsArrayBuffer(file);
     });
+
+    // Fonction séparée pour récupérer les données Grist
+    async function fetchGristDataAndRefresh() {
+      try {
+        const rawSender = await grist.docApi.fetchTable(TABLE_EXPEDITEUR);
+        const senders = formatGristData(rawSender);
+        if(senders.length > 0) {
+          senderData = senders[0];
+        } else {
+          showError(`⚠️ La table <b>${TABLE_EXPEDITEUR}</b> semble vide. Les variables expéditeur ne seront pas remplies.`);
+        }
+        updateCheckerUI();
+      } catch (err) {
+        showError(`❌ <b>Bloqué par Grist. Impossible de lire la table "${TABLE_EXPEDITEUR}".</b><br><br>
+                   1. Le Widget est-il réglé sur <b>"Full"</b> (accès complet) dans le panneau de droite ?<br>
+                   2. L'ID de la table est-il vraiment "${TABLE_EXPEDITEUR}" ?`);
+      }
+    }
 
     function updateCheckerUI() {
       if (!templateBinary) return;
@@ -223,12 +236,12 @@
       if (blob) {
         const identifier = currentRecipient.Nom || currentRecipient.Name || 'Previsualisation';
         saveAs(blob, `Doc_${identifier}.docx`);
-        logMessage("Prévisualisation téléchargée.", "status-ok");
+        logMessage("✅ Prévisualisation téléchargée.", "status-ok");
       }
     });
 
     document.getElementById('generateAllBtn').addEventListener('click', async () => {
-      logMessage("Génération en cours...", "status-warn");
+      logMessage("⏳ Génération en cours...", "status-warn");
       try {
         const rawRecipients = await grist.docApi.fetchTable(TABLE_DESTINATAIRES);
         const allRecipients = formatGristData(rawRecipients);
@@ -247,7 +260,7 @@
         saveAs(zipContent, "Publipostage_Documents.zip");
         logMessage(`✅ Archive ZIP générée avec ${allRecipients.length} documents.`, "status-ok");
       } catch (err) {
-        showError(`❌ Erreur lors de la lecture de la table "${TABLE_DESTINATAIRES}".`);
+        showError(`❌ Erreur lors de la lecture de la table "${TABLE_DESTINATAIRES}". Vérifiez son ID.`);
       }
     });
 
@@ -260,7 +273,7 @@
         doc.render(data);
         return doc.getZip().generate({ type: "blob", mimeType: "application/vnd.openxmlformats-officedocument.wordprocessingml.document" });
       } catch (error) {
-        showError("Erreur lors de la fusion du document.");
+        showError("❌ Erreur lors de la fusion du document.");
         return null;
       }
     }
