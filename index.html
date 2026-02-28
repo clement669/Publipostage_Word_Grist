@@ -2,16 +2,17 @@
 <html lang="fr">
 <head>
   <meta charset="UTF-8">
-  <title>Grist - Publipostage Word</title>
+  <title>Grist - Publipostage Avancé</title>
   
   <script src="https://docs.getgrist.com/grist-plugin-api.js"></script>
   
   <script src="https://cdnjs.cloudflare.com/ajax/libs/pizzip/3.1.4/pizzip.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/docxtemplater/3.37.11/docxtemplater.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/2.0.5/FileSaver.min.js"></script>
 
   <style>
-    /* Importation locale de la police Marianne */
+    /* Charte typographique (Système de Design de l'État) */
     @font-face {
       font-family: 'Marianne';
       src: url('Marianne-Regular.woff2') format('woff2');
@@ -25,174 +26,291 @@
       font-style: normal;
     }
 
-    /* Application de la police au corps du document */
     body {
       font-family: 'Marianne', -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
-      padding: 20px;
+      padding: 15px;
       background-color: #f4f5f7;
-      color: #333;
+      color: #1e1e1e;
+      margin: 0;
     }
-    
-    /* Reste du style inchangé */
     .container {
       background: white;
       padding: 20px;
       border-radius: 8px;
-      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-      max-width: 500px;
-      margin: 0 auto;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+      max-width: 100%;
     }
-    .form-group { margin-bottom: 15px; }
-    label { display: block; font-weight: bold; margin-bottom: 5px; font-size: 14px; }
-    input[type="text"], input[type="file"] {
-      width: 100%; padding: 8px; box-sizing: border-box;
-      border: 1px solid #ccc; border-radius: 4px;
-      font-family: 'Marianne', sans-serif; /* Appliqué aussi aux champs */
+    h2 { margin-top: 0; font-size: 18px; color: #000091; border-bottom: 2px solid #000091; padding-bottom: 10px; }
+    
+    .form-group { margin-bottom: 20px; }
+    label { display: block; font-weight: bold; margin-bottom: 8px; font-size: 14px; }
+    input[type="file"] {
+      width: 100%; padding: 10px; box-sizing: border-box;
+      border: 1px dashed #000091; background-color: #f9f8f6; border-radius: 4px;
+      font-family: 'Marianne', sans-serif; cursor: pointer;
     }
+
+    /* Tableau du vérificateur */
+    #checker-section { display: none; margin-top: 20px; }
+    table { width: 100%; border-collapse: collapse; margin-bottom: 20px; }
+    th, td { border: 1px solid #ddd; padding: 10px; text-align: left; font-size: 13px; }
+    th { background-color: #f0f0f0; font-weight: bold; }
+    
+    .status-ok { color: #16b378; font-weight: bold; }
+    .status-warn { color: #ff9947; font-weight: bold; }
+    .status-missing { color: #ce0500; font-weight: bold; }
+
+    /* Boutons */
+    .button-group { display: flex; gap: 10px; }
     button {
-      background-color: #000091; /* Bleu France officiel du gouvernement */
-      color: white; border: none;
-      padding: 10px 15px; border-radius: 4px; cursor: pointer;
-      width: 100%; font-size: 16px; font-weight: bold; margin-top: 10px;
-      font-family: 'Marianne', sans-serif;
+      flex: 1; border: none; padding: 12px 15px; border-radius: 4px; 
+      cursor: pointer; font-size: 14px; font-weight: bold;
+      font-family: 'Marianne', sans-serif; transition: background 0.2s;
     }
-    button:hover { background-color: #1212ff; }
-    #log { margin-top: 15px; font-size: 13px; color: #555; white-space: pre-wrap; }
-    .success { color: green; }
-    .error { color: #ce0500; /* Rouge Marianne */ }
+    .btn-preview { background-color: #e3e3fd; color: #000091; border: 1px solid #000091; }
+    .btn-preview:hover { background-color: #c6c6fa; }
+    .btn-generate { background-color: #000091; color: white; }
+    .btn-generate:hover { background-color: #1212ff; }
+    
+    #log { margin-top: 15px; font-size: 13px; font-weight: bold; }
   </style>
 </head>
 <body>
 
   <div class="container">
-    <h2>Générateur de Documents</h2>
+    <h2>Publipostage Word</h2>
     
     <div class="form-group">
-      <label for="senderTable">ID de la table Expéditeur :</label>
-      <input type="text" id="senderTable" placeholder="ex: Expediteurs" value="Expediteurs">
-    </div>
-
-    <div class="form-group">
-      <label for="recipientTable">ID de la table Destinataires :</label>
-      <input type="text" id="recipientTable" placeholder="ex: Destinataires" value="Destinataires">
-    </div>
-
-    <div class="form-group">
-      <label for="templateFile">Modèle Word (.docx) :</label>
+      <label for="templateFile">1. Chargez votre modèle Word (.docx)</label>
       <input type="file" id="templateFile" accept=".docx">
+      <small style="color: #666; display: block; margin-top: 5px;">Utilisez le format {{Nom_Variable}} dans votre document.</small>
     </div>
 
-    <button id="generateBtn">Générer les documents</button>
+    <div id="checker-section">
+      <label>2. Vérification des variables (Ligne sélectionnée)</label>
+      <table id="varTable">
+        <thead>
+          <tr>
+            <th>Variable détectée</th>
+            <th>Valeur actuelle</th>
+            <th>Statut</th>
+          </tr>
+        </thead>
+        <tbody>
+          </tbody>
+      </table>
 
-    <div id="log"></div>
+      <div class="button-group">
+        <button id="previewBtn" class="btn-preview">👁 Prévisualiser (Doc unique)</button>
+        <button id="generateAllBtn" class="btn-generate">📥 Générer TOUT (.zip)</button>
+      </div>
+      
+      <div id="log"></div>
+    </div>
   </div>
 
   <script>
-    // Initialisation de Grist (nécessite l'accès complet pour lire différentes tables)
+    // Configuration : IDs stricts des tables dans Grist
+    const TABLE_EXPEDITEUR = 'Expediteurs';
+    const TABLE_DESTINATAIRES = 'Destinataires';
+
+    let templateBinary = null;
+    let variablesInTemplate = [];
+    
+    let senderData = {}; // Données du premier expéditeur trouvé
+    let currentRecipient = {}; // Données de la ligne actuellement sélectionnée dans Grist
+
+    // Initialisation de Grist
     grist.ready({ requiredAccess: 'full' });
 
-    function log(msg, type="normal") {
-      const logDiv = document.getElementById('log');
-      logDiv.innerHTML += `<div class="${type}">${msg}</div>`;
+    // 1. Charger les données de l'Expéditeur une seule fois au démarrage
+    async function initSenderData() {
+      try {
+        const rawSender = await grist.docApi.fetchTable(TABLE_EXPEDITEUR);
+        const senders = formatGristData(rawSender);
+        if(senders.length > 0) {
+          senderData = senders[0]; // On prend la première ligne par défaut
+        }
+      } catch (e) {
+        console.error("Table Expediteurs introuvable ou vide.", e);
+      }
+    }
+    initSenderData();
+
+    // 2. Écouter la sélection de la ligne (Réactivité)
+    grist.onRecord(function(record) {
+      if (record) {
+        currentRecipient = record;
+        updateCheckerUI(); // Met à jour le tableau si un docx est chargé
+      }
+    });
+
+    // 3. Lire le fichier Word et extraire les variables
+    document.getElementById('templateFile').addEventListener('change', function(e) {
+      const file = e.target.files[0];
+      if (!file) return;
+
+      const reader = new FileReader();
+      reader.onload = function(event) {
+        templateBinary = event.target.result;
+        
+        try {
+          const zip = new PizZip(templateBinary);
+          const doc = new window.docxtemplater(zip, { 
+            paragraphLoop: true, 
+            linebreaks: true,
+            delimiters: { start: '{{', end: '}}' } // Force la détection des {{ }}
+          });
+          
+          const text = doc.getFullText(); // Récupère le texte brut sans XML
+          
+          // Regex pour attraper tout ce qui est entre {{ et }}
+          const regex = /\{\{\s*([^}]+?)\s*\}\}/g;
+          const vars = new Set();
+          let match;
+          while ((match = regex.exec(text)) !== null) {
+            vars.add(match[1].trim());
+          }
+          
+          variablesInTemplate = Array.from(vars);
+          document.getElementById('checker-section').style.display = 'block';
+          updateCheckerUI();
+
+        } catch(err) {
+          logMessage("Erreur lors de l'analyse du document. Est-ce bien un .docx ?", "status-missing");
+        }
+      };
+      reader.readAsBinaryString(file);
+    });
+
+    // 4. Mettre à jour le tableau des variables
+    function updateCheckerUI() {
+      if (!templateBinary) return; // Si pas de document, on ne fait rien
+
+      const tbody = document.querySelector('#varTable tbody');
+      tbody.innerHTML = '';
+
+      // Fusionne expéditeur et destinataire sélectionné pour la vérification
+      const combinedData = { ...senderData, ...currentRecipient };
+
+      variablesInTemplate.forEach(variable => {
+        const tr = document.createElement('tr');
+        
+        // Nom de la variable
+        const tdName = document.createElement('td');
+        tdName.textContent = `{{${variable}}}`;
+        
+        // Valeur et Statut
+        const tdValue = document.createElement('td');
+        const tdStatus = document.createElement('td');
+        
+        let value = combinedData[variable];
+
+        if (value === undefined || value === null || value === '') {
+          tdValue.textContent = "(Vide)";
+          tdValue.style.color = "#999";
+          tdStatus.innerHTML = '<span class="status-missing">❌ Manquant</span>';
+        } else if (Array.isArray(value) && value[0] === "L") {
+          // Gère le cas où l'utilisateur a mappé une colonne Référence brute au lieu d'une formule
+          tdValue.textContent = `[Réf. Ligne ID: ${value[1]}]`;
+          tdStatus.innerHTML = '<span class="status-warn">⚠️ Ref. brute (utilisez une formule)</span>';
+        } else {
+          tdValue.textContent = value;
+          tdStatus.innerHTML = '<span class="status-ok">✅ Trouvé</span>';
+        }
+
+        tr.appendChild(tdName);
+        tr.appendChild(tdValue);
+        tr.appendChild(tdStatus);
+        tbody.appendChild(tr);
+      });
     }
 
-    // Fonction pour convertir le format en colonnes de Grist vers un tableau de lignes (objets)
+    // 5. Génération d'un document UNIQUE (Prévisualisation)
+    document.getElementById('previewBtn').addEventListener('click', () => {
+      const combinedData = { ...senderData, ...currentRecipient };
+      const blob = generateSingleDoc(combinedData);
+      if (blob) {
+        // Tente de trouver un nom pertinent pour le fichier
+        const identifier = currentRecipient.Nom || currentRecipient.Name || currentRecipient.Societe || currentRecipient.id || 'Previsualisation';
+        saveAs(blob, `Doc_${identifier}.docx`);
+        logMessage("Prévisualisation téléchargée.", "status-ok");
+      }
+    });
+
+    // 6. Génération de TOUS les documents dans un fichier .ZIP
+    document.getElementById('generateAllBtn').addEventListener('click', async () => {
+      logMessage("Génération en cours, veuillez patienter...", "status-warn");
+      
+      try {
+        // On récupère toutes les lignes de la table Destinataires fraîchement
+        const rawRecipients = await grist.docApi.fetchTable(TABLE_DESTINATAIRES);
+        const allRecipients = formatGristData(rawRecipients);
+        
+        const zipBundle = new JSZip();
+        
+        allRecipients.forEach((rec, index) => {
+          const combinedData = { ...senderData, ...rec };
+          const blob = generateSingleDoc(combinedData);
+          
+          if (blob) {
+            const identifier = rec.Nom || rec.Name || rec.Societe || (index + 1);
+            zipBundle.file(`Document_${identifier}.docx`, blob);
+          }
+        });
+
+        // Téléchargement du ZIP contenant tous les DOCX
+        const zipContent = await zipBundle.generateAsync({ type: "blob" });
+        saveAs(zipContent, "Publipostage_Documents.zip");
+        
+        logMessage(`✅ Succès : Archive ZIP générée avec ${allRecipients.length} documents.`, "status-ok");
+
+      } catch (err) {
+        console.error(err);
+        logMessage("Erreur lors de la récupération des Destinataires.", "status-missing");
+      }
+    });
+
+    // --- Fonctions utilitaires ---
+
+    // Génère le blob DOCX pour une ligne de données
+    function generateSingleDoc(data) {
+      try {
+        const zip = new PizZip(templateBinary);
+        const doc = new window.docxtemplater(zip, {
+          paragraphLoop: true,
+          linebreaks: true,
+          delimiters: { start: '{{', end: '}}' }
+        });
+        doc.render(data);
+        return doc.getZip().generate({ type: "blob", mimeType: "application/vnd.openxmlformats-officedocument.wordprocessingml.document" });
+      } catch (error) {
+        console.error("Erreur docxtemplater:", error);
+        logMessage("Erreur lors de la fusion du document.", "status-missing");
+        return null;
+      }
+    }
+
+    // Convertit le format colonne de Grist en format ligne (tableau d'objets)
     function formatGristData(gristData) {
       const rows = [];
       const keys = Object.keys(gristData);
       if (keys.length === 0 || !gristData[keys[0]]) return rows;
-      
       const numRows = gristData[keys[0]].length;
       for (let i = 0; i < numRows; i++) {
         const row = {};
-        for (const key of keys) {
-          row[key] = gristData[key][i];
-        }
+        for (const key of keys) { row[key] = gristData[key][i]; }
         rows.push(row);
       }
       return rows;
     }
 
-    document.getElementById('generateBtn').addEventListener('click', async () => {
-      document.getElementById('log').innerHTML = ''; // Reset du log
-      
-      const senderTableId = document.getElementById('senderTable').value.trim();
-      const recipientTableId = document.getElementById('recipientTable').value.trim();
-      const fileInput = document.getElementById('templateFile');
-
-      if (!fileInput.files.length) {
-        return log("Erreur : Veuillez sélectionner un modèle .docx.", "error");
-      }
-      if (!senderTableId || !recipientTableId) {
-        return log("Erreur : Veuillez indiquer les IDs des tables.", "error");
-      }
-
-      try {
-        log("Récupération des données depuis Grist...");
-        
-        // 1. Récupération des données via l'API Grist
-        const rawSenderContent = await grist.docApi.fetchTable(senderTableId);
-        const rawRecipientContent = await grist.docApi.fetchTable(recipientTableId);
-
-        const senders = formatGristData(rawSenderContent);
-        const recipients = formatGristData(rawRecipientContent);
-
-        if (senders.length === 0) throw new Error("La table Expéditeur est vide.");
-        if (recipients.length === 0) throw new Error("La table Destinataires est vide.");
-
-        // On prend le premier expéditeur par défaut
-        const senderData = senders[0]; 
-
-        // 2. Lecture du fichier Word (.docx)
-        const file = fileInput.files[0];
-        const reader = new FileReader();
-
-        reader.onload = function(event) {
-          const content = event.target.result;
-
-          log(`Génération de ${recipients.length} document(s)...`);
-
-          // 3. Boucle sur chaque destinataire
-          recipients.forEach((recipientData, index) => {
-            try {
-              const zip = new PizZip(content);
-              const doc = new window.docxtemplater(zip, {
-                paragraphLoop: true,
-                linebreaks: true,
-              });
-
-              // Fusion des données : les variables de l'expéditeur et du destinataire sont combinées
-              const templateData = { ...senderData, ...recipientData };
-              
-              doc.render(templateData);
-
-              const blob = doc.getZip().generate({
-                type: "blob",
-                mimeType: "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
-              });
-
-              // Téléchargement du fichier (on essaie d'utiliser une colonne "Nom" ou "Company" pour le titre, sinon on utilise l'index)
-              const fileName = `Document_${recipientData.Nom || recipientData.Name || recipientData.Societe || (index + 1)}.docx`;
-              saveAs(blob, fileName);
-
-              log(`✓ ${fileName} généré avec succès.`, "success");
-
-            } catch (error) {
-              console.error(error);
-              log(`Erreur lors de la génération du document ${index + 1}.`, "error");
-            }
-          });
-          
-          log("Opération terminée !");
-        };
-
-        reader.readAsBinaryString(file);
-
-      } catch (err) {
-        console.error(err);
-        log("Erreur : " + err.message + " (Vérifiez que les IDs de tables sont exacts)", "error");
-      }
-    });
+    function logMessage(msg, className) {
+      const logDiv = document.getElementById('log');
+      logDiv.textContent = msg;
+      logDiv.className = className;
+      setTimeout(() => { logDiv.textContent = ''; }, 5000);
+    }
   </script>
 </body>
 </html>
