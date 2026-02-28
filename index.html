@@ -1,0 +1,198 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <title>Grist - Publipostage Word</title>
+  
+  <script src="https://docs.getgrist.com/grist-plugin-api.js"></script>
+  
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/pizzip/3.1.4/pizzip.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/docxtemplater/3.37.11/docxtemplater.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/2.0.5/FileSaver.min.js"></script>
+
+  <style>
+    /* Importation locale de la police Marianne */
+    @font-face {
+      font-family: 'Marianne';
+      src: url('Marianne-Regular.woff2') format('woff2');
+      font-weight: normal;
+      font-style: normal;
+    }
+    @font-face {
+      font-family: 'Marianne';
+      src: url('Marianne-Bold.woff2') format('woff2');
+      font-weight: bold;
+      font-style: normal;
+    }
+
+    /* Application de la police au corps du document */
+    body {
+      font-family: 'Marianne', -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      padding: 20px;
+      background-color: #f4f5f7;
+      color: #333;
+    }
+    
+    /* Reste du style inchangé */
+    .container {
+      background: white;
+      padding: 20px;
+      border-radius: 8px;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+      max-width: 500px;
+      margin: 0 auto;
+    }
+    .form-group { margin-bottom: 15px; }
+    label { display: block; font-weight: bold; margin-bottom: 5px; font-size: 14px; }
+    input[type="text"], input[type="file"] {
+      width: 100%; padding: 8px; box-sizing: border-box;
+      border: 1px solid #ccc; border-radius: 4px;
+      font-family: 'Marianne', sans-serif; /* Appliqué aussi aux champs */
+    }
+    button {
+      background-color: #000091; /* Bleu France officiel du gouvernement */
+      color: white; border: none;
+      padding: 10px 15px; border-radius: 4px; cursor: pointer;
+      width: 100%; font-size: 16px; font-weight: bold; margin-top: 10px;
+      font-family: 'Marianne', sans-serif;
+    }
+    button:hover { background-color: #1212ff; }
+    #log { margin-top: 15px; font-size: 13px; color: #555; white-space: pre-wrap; }
+    .success { color: green; }
+    .error { color: #ce0500; /* Rouge Marianne */ }
+  </style>
+</head>
+<body>
+
+  <div class="container">
+    <h2>Générateur de Documents</h2>
+    
+    <div class="form-group">
+      <label for="senderTable">ID de la table Expéditeur :</label>
+      <input type="text" id="senderTable" placeholder="ex: Expediteurs" value="Expediteurs">
+    </div>
+
+    <div class="form-group">
+      <label for="recipientTable">ID de la table Destinataires :</label>
+      <input type="text" id="recipientTable" placeholder="ex: Destinataires" value="Destinataires">
+    </div>
+
+    <div class="form-group">
+      <label for="templateFile">Modèle Word (.docx) :</label>
+      <input type="file" id="templateFile" accept=".docx">
+    </div>
+
+    <button id="generateBtn">Générer les documents</button>
+
+    <div id="log"></div>
+  </div>
+
+  <script>
+    // Initialisation de Grist (nécessite l'accès complet pour lire différentes tables)
+    grist.ready({ requiredAccess: 'full' });
+
+    function log(msg, type="normal") {
+      const logDiv = document.getElementById('log');
+      logDiv.innerHTML += `<div class="${type}">${msg}</div>`;
+    }
+
+    // Fonction pour convertir le format en colonnes de Grist vers un tableau de lignes (objets)
+    function formatGristData(gristData) {
+      const rows = [];
+      const keys = Object.keys(gristData);
+      if (keys.length === 0 || !gristData[keys[0]]) return rows;
+      
+      const numRows = gristData[keys[0]].length;
+      for (let i = 0; i < numRows; i++) {
+        const row = {};
+        for (const key of keys) {
+          row[key] = gristData[key][i];
+        }
+        rows.push(row);
+      }
+      return rows;
+    }
+
+    document.getElementById('generateBtn').addEventListener('click', async () => {
+      document.getElementById('log').innerHTML = ''; // Reset du log
+      
+      const senderTableId = document.getElementById('senderTable').value.trim();
+      const recipientTableId = document.getElementById('recipientTable').value.trim();
+      const fileInput = document.getElementById('templateFile');
+
+      if (!fileInput.files.length) {
+        return log("Erreur : Veuillez sélectionner un modèle .docx.", "error");
+      }
+      if (!senderTableId || !recipientTableId) {
+        return log("Erreur : Veuillez indiquer les IDs des tables.", "error");
+      }
+
+      try {
+        log("Récupération des données depuis Grist...");
+        
+        // 1. Récupération des données via l'API Grist
+        const rawSenderContent = await grist.docApi.fetchTable(senderTableId);
+        const rawRecipientContent = await grist.docApi.fetchTable(recipientTableId);
+
+        const senders = formatGristData(rawSenderContent);
+        const recipients = formatGristData(rawRecipientContent);
+
+        if (senders.length === 0) throw new Error("La table Expéditeur est vide.");
+        if (recipients.length === 0) throw new Error("La table Destinataires est vide.");
+
+        // On prend le premier expéditeur par défaut
+        const senderData = senders[0]; 
+
+        // 2. Lecture du fichier Word (.docx)
+        const file = fileInput.files[0];
+        const reader = new FileReader();
+
+        reader.onload = function(event) {
+          const content = event.target.result;
+
+          log(`Génération de ${recipients.length} document(s)...`);
+
+          // 3. Boucle sur chaque destinataire
+          recipients.forEach((recipientData, index) => {
+            try {
+              const zip = new PizZip(content);
+              const doc = new window.docxtemplater(zip, {
+                paragraphLoop: true,
+                linebreaks: true,
+              });
+
+              // Fusion des données : les variables de l'expéditeur et du destinataire sont combinées
+              const templateData = { ...senderData, ...recipientData };
+              
+              doc.render(templateData);
+
+              const blob = doc.getZip().generate({
+                type: "blob",
+                mimeType: "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+              });
+
+              // Téléchargement du fichier (on essaie d'utiliser une colonne "Nom" ou "Company" pour le titre, sinon on utilise l'index)
+              const fileName = `Document_${recipientData.Nom || recipientData.Name || recipientData.Societe || (index + 1)}.docx`;
+              saveAs(blob, fileName);
+
+              log(`✓ ${fileName} généré avec succès.`, "success");
+
+            } catch (error) {
+              console.error(error);
+              log(`Erreur lors de la génération du document ${index + 1}.`, "error");
+            }
+          });
+          
+          log("Opération terminée !");
+        };
+
+        reader.readAsBinaryString(file);
+
+      } catch (err) {
+        console.error(err);
+        log("Erreur : " + err.message + " (Vérifiez que les IDs de tables sont exacts)", "error");
+      }
+    });
+  </script>
+</body>
+</html>
