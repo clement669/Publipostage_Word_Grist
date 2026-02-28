@@ -228,7 +228,7 @@
       });
     }
 
-    // --- NOUVELLE FONCTION DE PREVISUALISATION ---
+// --- NOUVELLE FONCTION DE PREVISUALISATION ---
     document.getElementById('previewBtn').addEventListener('click', () => {
       const combinedData = { ...senderData, ...currentRecipient };
       const blob = generateSingleDoc(combinedData);
@@ -241,22 +241,28 @@
         modal.style.display = 'block';
         container.innerHTML = '<div style="margin-top:50px; font-weight:bold; color:#000091;">Génération de la prévisualisation en cours...</div>';
         
-        // Utiliser docx-preview pour dessiner le blob dans la div
-        docx.renderAsync(blob, container, null, {
-          className: "docx", // Classe CSS par défaut
-          inWrapper: true, // Ajoute un fond gris et une page blanche centrée
-          ignoreWidth: false, // Respecte la largeur de la page Word
-          ignoreHeight: false, // Respecte la hauteur
-          ignoreFonts: false, // Essaie de respecter les polices
-          breakPages: true, // Respecte les sauts de page
-        })
-        .then(() => {
-          console.log("Prévisualisation générée avec succès");
-        })
-        .catch(err => {
-          console.error(err);
-          container.innerHTML = '<div style="color:red; margin-top:50px;">Erreur lors du rendu de la prévisualisation.</div>';
-        });
+        try {
+          // Utiliser docx-preview pour dessiner le blob
+          // On passe 'container' deux fois (pour le corps et le style) pour éviter les bugs
+          docx.renderAsync(blob, container, container, {
+            className: "docx", 
+            inWrapper: true, 
+            ignoreWidth: false, 
+            ignoreHeight: false, 
+            ignoreFonts: true, // <-- LA SOLUTION EST ICI : on ignore la police du docx
+            breakPages: true, 
+          })
+          .then(() => {
+            console.log("Prévisualisation générée avec succès");
+          })
+          .catch(err => {
+            console.error("Erreur docx-preview :", err);
+            container.innerHTML = `<div style="color:#ce0500; background:#ffe8e5; padding:20px; border-radius:8px; margin-top:50px;"><b>Erreur lors du rendu de la prévisualisation :</b> ${err.message}</div>`;
+          });
+        } catch (syncErr) {
+          console.error("Erreur critique :", syncErr);
+          container.innerHTML = `<div style="color:#ce0500; background:#ffe8e5; padding:20px; border-radius:8px; margin-top:50px;"><b>Erreur critique (Le fichier docx-preview.js est-il bien le vrai code ?) :</b> ${syncErr.message}</div>`;
+        }
       }
     });
 
