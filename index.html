@@ -5,7 +5,9 @@
   <title>Grist - Publipostage Avancé</title>
   
   <script src="https://docs.getgrist.com/grist-plugin-api.js"></script>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/pizzip/3.1.4/pizzip.min.js"></script>
+  
+  <script src="https://unpkg.com/pizzip@3.1.7/dist/pizzip.min.js"></script>
+  
   <script src="https://cdnjs.cloudflare.com/ajax/libs/docxtemplater/3.37.11/docxtemplater.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/2.0.5/FileSaver.min.js"></script>
@@ -100,7 +102,6 @@
   </div>
 
   <script>
-    // ⚠️ Modifiez ici si les vrais IDs de vos tables sont différents
     const TABLE_EXPEDITEUR = 'Expediteurs';
     const TABLE_DESTINATAIRES = 'Destinataires';
 
@@ -130,18 +131,16 @@
       }
     });
 
-    // ACTION LIEE AU NOUVEAU BOUTON
     document.getElementById('analyzeBtn').addEventListener('click', function() {
       clearError();
       const fileInput = document.getElementById('templateFile');
       const file = fileInput.files[0];
       
       if (!file) {
-        showError("⚠️ Veuillez d'abord sélectionner un fichier .docx en cliquant sur le bouton 'Parcourir...'.");
+        showError("⚠️ Veuillez d'abord sélectionner un fichier .docx.");
         return;
       }
 
-      // 1. On lit le fichier Word localement d'abord
       const reader = new FileReader();
       reader.onload = async function(event) {
         templateBinary = event.target.result;
@@ -165,18 +164,16 @@
           variablesInTemplate = Array.from(vars);
           document.getElementById('checker-section').style.display = 'block';
 
-          // 2. Une fois le document lu, on interroge Grist
           await fetchGristDataAndRefresh();
 
         } catch(err) {
-          showError(`❌ <b>Erreur de lecture du Word :</b> ${err.message}. Le fichier est peut-être corrompu.`);
+          showError(`❌ <b>Erreur de lecture du Word :</b> ${err.message}.`);
         }
       };
       
       reader.readAsArrayBuffer(file);
     });
 
-    // Fonction séparée pour récupérer les données Grist
     async function fetchGristDataAndRefresh() {
       try {
         const rawSender = await grist.docApi.fetchTable(TABLE_EXPEDITEUR);
@@ -184,13 +181,11 @@
         if(senders.length > 0) {
           senderData = senders[0];
         } else {
-          showError(`⚠️ La table <b>${TABLE_EXPEDITEUR}</b> semble vide. Les variables expéditeur ne seront pas remplies.`);
+          showError(`⚠️ La table <b>${TABLE_EXPEDITEUR}</b> est vide.`);
         }
         updateCheckerUI();
       } catch (err) {
-        showError(`❌ <b>Bloqué par Grist. Impossible de lire la table "${TABLE_EXPEDITEUR}".</b><br><br>
-                   1. Le Widget est-il réglé sur <b>"Full"</b> (accès complet) dans le panneau de droite ?<br>
-                   2. L'ID de la table est-il vraiment "${TABLE_EXPEDITEUR}" ?`);
+        showError(`❌ <b>Bloqué par Grist. Impossible de lire la table "${TABLE_EXPEDITEUR}".</b><br><br>Vérifiez que l'ID est bien "${TABLE_EXPEDITEUR}".`);
       }
     }
 
@@ -260,7 +255,7 @@
         saveAs(zipContent, "Publipostage_Documents.zip");
         logMessage(`✅ Archive ZIP générée avec ${allRecipients.length} documents.`, "status-ok");
       } catch (err) {
-        showError(`❌ Erreur lors de la lecture de la table "${TABLE_DESTINATAIRES}". Vérifiez son ID.`);
+        showError(`❌ Erreur lors de la lecture de la table "${TABLE_DESTINATAIRES}".`);
       }
     });
 
