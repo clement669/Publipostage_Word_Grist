@@ -19,7 +19,7 @@ Contrairement aux outils de publipostage externes qui expédient vos information
 * L'intégralité des opérations (lecture du document Word, remplacement des variables, génération des PDF) s'effectue **exclusivement au sein de la mémoire vive de votre propre navigateur web**. 
 * **Aucune donnée**, qu'il s'agisse des noms de vos correspondants, des adresses ou du contenu de vos modèles, ne quitte votre ordinateur ni ne transite par Internet. 
 * Le code du widget a été réalisé par mes soins, et s'appuie sur des bibliothèques OpenSource fiables et connues, intégrées localement dans l'outil (aucun appel à une technologie extérieure n'est réalisé).
-* Le widget est hébergé sur GitHub, de façon sécurisée, et ne peut être modifié que par moi-même. Il ne collecte ni ne stocke aucune donnée : rien ne quitte votre ordonateur !
+* Le widget est hébergé sur GitHub, de façon sécurisée, et ne peut être modifié que par moi-même. Il ne collecte ni ne stocke aucune donnée : rien ne quitte votre ordinateur !
 
 Vous pouvez donc opérer ce module en toute quiétude, même pour le traitement d'informations sensibles.
 
