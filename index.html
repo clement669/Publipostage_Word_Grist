@@ -275,42 +275,42 @@
     document.getElementById('exportPdfBtn').addEventListener('click', async () => {
       const isAll = document.querySelector('input[name="scope"]:checked').value === 'all';
       
-      // 1. Un conteneur robuste caché "sous" le widget au lieu d'être hors de l'écran
+      // 1. LE PANNEAU DE CHARGEMENT (La "Cape d'invisibilité")
+      // Ce panneau recouvre tout, mais on dit à html2canvas de l'ignorer !
+      const overlay = document.createElement('div');
+      overlay.style.cssText = 'position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(255,255,255,0.95); z-index:9999; display:flex; flex-direction:column; align-items:center; justify-content:center; font-size:18px; font-weight:bold; color:#000091; font-family:"Marianne", sans-serif;';
+      overlay.innerHTML = '<div>⏳ Génération du PDF en cours...</div><div style="font-size:14px; color:#666; margin-top:10px;">Veuillez patienter, ne fermez pas la page.</div>';
+      overlay.setAttribute('data-html2canvas-ignore', 'true'); // LA MAGIE EST ICI
+      document.body.appendChild(overlay);
+
+      // 2. LE CONTENEUR DU DOCUMENT (Affiché normalement sur la page, sous le panneau)
       const tempContainer = document.createElement('div');
-      tempContainer.style.width = '210mm'; // Largeur stricte d'un A4
-      tempContainer.style.minHeight = '297mm'; // Hauteur stricte d'un A4
-      tempContainer.style.backgroundColor = 'white'; 
-      tempContainer.style.position = 'absolute'; 
-      tempContainer.style.top = '0';
-      tempContainer.style.left = '0';
-      tempContainer.style.zIndex = '-1000'; // On le cache DERRIÈRE le reste de la page
+      tempContainer.style.cssText = 'position:absolute; top:0; left:0; width:210mm; background:white; z-index:1; padding:20mm; box-sizing:border-box;';
       document.body.appendChild(tempContainer);
 
-      // 2. Options PDF (Marges à 0 car le Word a DÉJÀ ses propres marges)
+      // Options PDF (On laisse html2canvas prendre sa photo grandeur nature)
       const opt = { 
         margin: 0, 
         image: { type: 'jpeg', quality: 0.98 }, 
-        html2canvas: { scale: 2, windowWidth: 800 }, 
+        html2canvas: { scale: 2, useCORS: true }, 
         jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' } 
       };
 
-      // Fonction utilitaire pour créer une pause (laisser le navigateur dessiner)
       const sleep = (ms) => new Promise(resolve => setTimeout(resolve, ms));
 
       if (!isAll) {
         // --- UN SEUL PDF ---
-        logMessage("⏳ Conversion PDF en cours...", "log-warn");
         const docData = generateSingleDoc({ ...senderData, ...currentRecipient }, "arraybuffer");
         
         if(docData) {
-          // inWrapper en false ici évite d'imprimer la zone d'ombre grise du plugin dans le PDF
           await docx.renderAsync(docData, tempContainer, null, { className: "docx", inWrapper: false, ignoreFonts: true, breakPages: true });
           
-          await sleep(500); // PAUSE CRUCIALE
+          await sleep(800); // Pause légèrement allongée pour garantir le dessin complet
           
           opt.filename = `Doc_${currentRecipient.Nom || currentRecipient.Name || 'Document'}.pdf`;
           html2pdf().set(opt).from(tempContainer).save().then(() => {
             document.body.removeChild(tempContainer);
+            document.body.removeChild(overlay); // On retire le panneau
             logMessage("✅ PDF téléchargé.", "log-ok");
           });
         }
@@ -322,31 +322,34 @@
           const zipBundle = new JSZip();
 
           for (let i = 0; i < allRecipients.length; i++) {
-            logMessage(`⏳ Conversion PDF ${i + 1} sur ${allRecipients.length}...`, "log-warn");
+            overlay.innerHTML = `<div>⏳ Conversion PDF ${i + 1} sur ${allRecipients.length}...</div>`;
             const rec = allRecipients[i];
             const docData = generateSingleDoc({ ...senderData, ...rec }, "arraybuffer");
             
             if (docData) {
-              tempContainer.innerHTML = ''; // Nettoyage avant le prochain doc
+              tempContainer.innerHTML = ''; 
               await docx.renderAsync(docData, tempContainer, null, { className: "docx", inWrapper: false, ignoreFonts: true, breakPages: true });
               
-              await sleep(500); // PAUSE pour chaque document
+              await sleep(800); 
               
               const id = rec.Nom || rec.Name || (i+1);
               const pdfBlob = await html2pdf().set(opt).from(tempContainer).outputPdf('blob');
               zipBundle.file(`Doc_${id}.pdf`, pdfBlob);
             }
           }
-          logMessage("⏳ Création de l'archive ZIP...", "log-warn");
+          overlay.innerHTML = '<div>⏳ Création de l\'archive ZIP...</div>';
           const zipContent = await zipBundle.generateAsync({ type: "blob" });
           saveAs(zipContent, "Publipostage_PDF.zip");
+          
           document.body.removeChild(tempContainer);
+          document.body.removeChild(overlay);
           logMessage(`✅ Archive ZIP générée avec ${allRecipients.length} PDF.`, "log-ok");
 
         } catch(e) {
            console.error(e);
            showError("❌ Erreur pendant la génération de masse.");
            if (document.body.contains(tempContainer)) document.body.removeChild(tempContainer);
+           if (document.body.contains(overlay)) document.body.removeChild(overlay);
         }
       }
     });
