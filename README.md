@@ -94,6 +94,6 @@ C'est exactement la même chose que le souci ci-dessus *(et pour cause : j'utili
 ### Une erreur rouge survient inopinément :
 Assurez-vous que vous n'avez pas égaré une accolade dans votre document Word (par exemple `{NOM}}` au lieu de `{{NOM}}`), et/ou passez me voir !
 
-[^1] : Pour les curieux https://github.com/clement669/Publipostage_Word_Grist
+[^1]: Pour les curieux https://github.com/clement669/Publipostage_Word_Grist
 ---
 *Outil développé et maintenu par Clément GAGNOT exclusivement destiné à un usage en interne au sein de l'UD28 DREAL.*
