@@ -20,7 +20,7 @@ Contrairement aux outils de publipostage externes qui expédient vos information
 * L'intégralité des opérations (lecture du document Word, remplacement des variables, génération des PDF) s'effectue **exclusivement au sein de la mémoire vive de votre propre navigateur web**. 
 * **Aucune donnée**, qu'il s'agisse des noms de vos correspondants, des adresses ou du contenu de vos modèles, ne quitte votre ordinateur ni ne transite par Internet. 
 * Le code du widget a été réalisé par mes soins, et s'appuie sur des bibliothèques OpenSource fiables et connues, intégrées localement dans l'outil (aucun appel à une technologie extérieure n'est réalisé).
-* Le widget est hébergé sur GitHub, de façon sécurisée, et ne peut être modifié que par moi-même. Il ne collecte ni ne stocke aucune donnée : rien ne quitte votre ordinateur !
+* Le widget est hébergé sur GitHub[^1], de façon sécurisée, et ne peut être modifié que par moi-même. Il ne collecte ni ne stocke aucune donnée : rien ne quitte votre ordinateur !
 
 > [!IMPORTANT]
 > Vous pouvez donc opérer ce module en toute quiétude, même pour le traitement d'informations sensibles.
@@ -67,7 +67,7 @@ Il ne vous reste plus qu'à choisir la portée de votre action :
 > Notez que si la génération de multiples documents est très rapide au format Word, elle peut devenir plus longue pour le format pdf.
 
 Enfin, optez pour le format de votre convenance :
-* **👁 Prévisualiser :** Ouvre une fenêtre pour contrôler l'aspect visuel du document final avant tout téléchargement. *en cas de souci, cf le dernier chapitre de cette documentation[^1] 😉* 
+* **👁 Prévisualiser :** Ouvre une fenêtre pour contrôler l'aspect visuel du document final avant tout téléchargement. *en cas de souci, cf le dernier chapitre de cette documentation 😉* 
 * **📝 Word (.docx) :** Pour générer le document et y apporter d'ultimes retouches manuelles si nécessaire.
 * **📄 PDF (.pdf) :** Pour un document figé, prêt à être signé.
 
@@ -89,10 +89,11 @@ Je vous passe le jargon, mais pour générer les pdf efficacement, j'utilise une
 > **Si ça arrive, pas de panique !** Pour la génération au format Word j'utilise un outil différent, donc aucun risque : télécharger en Word, puis convertissez en PDF comme vous le faites d'habitude.
   
 ### La mise en page de la prévisualisation diffère du document original :
-[^1]: C'est exactement la même chose que le souci ci-dessus *(et pour cause : j'utilise le même outil pur dessiner la prévisualisation que pour le "dessin" qui sert de base au pdf)*. Si la prévisualisation ne ressemble pas au document original, ne perdez pas de temps à le télécharger au format PDF : téléchargez directement au format Word, en principe il n'y aura aucun problème !
+C'est exactement la même chose que le souci ci-dessus *(et pour cause : j'utilise le même outil pur dessiner la prévisualisation que pour le "dessin" qui sert de base au pdf)*. Si la prévisualisation ne ressemble pas au document original, ne perdez pas de temps à le télécharger au format PDF : téléchargez directement au format Word, en principe il n'y aura aucun problème !
 
 ### Une erreur rouge survient inopinément :
 Assurez-vous que vous n'avez pas égaré une accolade dans votre document Word (par exemple `{NOM}}` au lieu de `{{NOM}}`), et/ou passez me voir !
 
+[^1] : Pour les curieux https://github.com/clement669/Publipostage_Word_Grist
 ---
 *Outil développé et maintenu par Clément GAGNOT exclusivement destiné à un usage en interne au sein de l'UD28 DREAL.*
