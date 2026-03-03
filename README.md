@@ -7,7 +7,7 @@ Bienvenue sur le manuel d'utilisation du nouvel outil de génération de documen
 ## 📜Préface
 Ce module a été minutieusement façonné pour nous permettre de générer des courriers et des actes administratifs de manière automatisée, simultanée et massive, tout en respectant scrupuleusement la charte graphique de l'État et les impératifs de sécurité de notre administration. 
 Cette démarche s'insère dans la mise en oeuvre de la dématérialisation à l'UD, et vise à profiter de la flexibilité et de la puissance de Grist pour s'offrir un petit bonus qui, je l'espère, saura se révéler bien utile pour de futures actions à grande échelle, mais également dans le cadre de la gestion de crise. \
-> [!TIP]
+> [!CONSEIL]
 > Je suis disponible pour le faire évoluer au fil de futurs besoins, mais il est conçu pour que vous puissiez en conserver la jouissance même dans l'éventualité de mon départ, *d'où cette documentation la plus exhaustive possible*.
 
 ---
