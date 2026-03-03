@@ -19,8 +19,8 @@ Il est légitime, lorsqu'on manipule des données professionnelles ou personnell
 Contrairement aux outils de publipostage externes qui expédient vos informations on ne sait trop où, cet outil fonctionne selon un principe de **traitement strictement local**. 
 * L'intégralité des opérations (lecture du document Word, remplacement des variables, génération des PDF) s'effectue **exclusivement au sein de la mémoire vive de votre propre navigateur web**. 
 * **Aucune donnée**, qu'il s'agisse des noms de vos correspondants, des adresses ou du contenu de vos modèles, ne quitte votre ordinateur ni ne transite par Internet. 
-* Le code du widget a été réalisé par mes soins, et s'appuie sur des bibliothèques OpenSource fiables et connues[^2], intégrées localement dans l'outil (aucun appel à une technologie extérieure n'est réalisé).
-* Le widget est hébergé sur GitHub[^1], de façon sécurisée, et ne peut être modifié que par moi-même. Il ne collecte ni ne stocke aucune donnée : rien ne quitte votre ordinateur !
+* Le code du widget a été réalisé par mes soins, et s'appuie sur des bibliothèques OpenSource fiables et connues[^1], intégrées localement dans l'outil (aucun appel à une technologie extérieure n'est réalisé).
+* Le widget est hébergé sur GitHub[^2], de façon sécurisée, et ne peut être modifié que par moi-même. Il ne collecte ni ne stocke aucune donnée : rien ne quitte votre ordinateur !
 
 > [!IMPORTANT]
 > Vous pouvez donc opérer ce module en toute quiétude, même pour le traitement d'informations sensibles.
@@ -95,8 +95,8 @@ C'est exactement la même chose que le souci ci-dessus[^3]. Si la prévisualisat
 ### Une erreur rouge survient inopinément :
 Assurez-vous que vous n'avez pas égaré une accolade dans votre document Word (par exemple `{NOM}}` au lieu de `{{NOM}}`), et/ou passez me voir !
 
-[^1]: Pour les curieux : [➡lien vers le GitHub](https://github.com/clement669/Publipostage_Word_Grist).
-[^2]: Outils utilisés : [FileSaver.min.js](https://www.npmjs.com/package/file-saver) ; [docx-preview.min.js](https://www.npmjs.com/package/docx-preview) ; [docxtemplater.js](https://docxtemplater.com/docs/goals/) ; [html2pdf.bundle.min.js](https://github.com/eKoopmans/html2pdf.js/tree/main) ; [jszip.min.js](https://stuk.github.io/jszip/) ; [pizzip.min.js](https://www.jsdelivr.com/package/npm/pizzip).
+[^1]: Outils utilisés : [FileSaver.min.js](https://www.npmjs.com/package/file-saver) ; [docx-preview.min.js](https://www.npmjs.com/package/docx-preview) ; [docxtemplater.js](https://docxtemplater.com/docs/goals/) ; [html2pdf.bundle.min.js](https://github.com/eKoopmans/html2pdf.js/tree/main) ; [jszip.min.js](https://stuk.github.io/jszip/) ; [pizzip.min.js](https://www.jsdelivr.com/package/npm/pizzip).
+[^2]: Pour les curieux : [➡lien vers le GitHub](https://github.com/clement669/Publipostage_Word_Grist).
 [^3]: et pour cause : j'utilise le même outil pour dessiner la prévisualisation que pour le "dessin" qui sert de base au pdf !
 ---
 <sub>*Outil développé et maintenu par Clément GAGNOT exclusivement destiné à un usage en interne au sein de l'UD28 DREAL.*</sub>
