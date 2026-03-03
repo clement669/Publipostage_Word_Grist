@@ -14,8 +14,11 @@
   <script src="./html2pdf.bundle.min.js"></script>
 
   <style>
+    /* Polices Marianne locales */
     @font-face { font-family: 'Marianne'; src: url('Marianne-Regular.woff2') format('woff2'); font-weight: normal; }
     @font-face { font-family: 'Marianne'; src: url('Marianne-Bold.woff2') format('woff2'); font-weight: bold; }
+    @font-face { font-family: 'Marianne'; src: url('Marianne-Light.woff2') format('woff2'); font-weight: 300; }
+    @font-face { font-family: 'Marianne'; src: url('Marianne-ExtraBold.woff2') format('woff2'); font-weight: 800; }
 
     body {
       font-family: 'Marianne', -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
@@ -42,12 +45,12 @@
     .status-warn { color: #ff9947; font-weight: bold; }
     .status-missing { color: #ce0500; font-weight: bold; }
 
-    /* UI : Choix de la cible */
+    /* Choix de la cible (Radios) */
     .target-selector { background: #f9f8f6; padding: 15px; border-radius: 4px; margin-bottom: 15px; border: 1px solid #e5e5e5; }
     .target-selector label { font-weight: normal; cursor: pointer; display: flex; align-items: center; gap: 10px; margin-bottom: 5px; }
     .target-selector input[type="radio"] { cursor: pointer; transform: scale(1.2); }
 
-    /* UI Boutons */
+    /* Boutons */
     .button-group { display: flex; gap: 10px; flex-wrap: wrap; }
     button { flex: 1; min-width: 120px; border: none; padding: 12px 10px; border-radius: 4px; cursor: pointer; font-size: 14px; font-weight: bold; font-family: 'Marianne', sans-serif; transition: background 0.2s; }
     button:disabled { background-color: #e5e5e5 !important; color: #929292 !important; border-color: #e5e5e5 !important; cursor: not-allowed; }
@@ -61,7 +64,7 @@
     .btn-pdf { background-color: #ce0500; color: white; }
     .btn-pdf:hover:not(:disabled) { background-color: #a00400; }
     
-    #log { margin-top: 15px; font-size: 14px; font-weight: bold; padding: 10px; border-radius: 4px; }
+    #log { margin-top: 15px; font-size: 14px; font-weight: bold; padding: 10px; border-radius: 4px; display: none; }
     .log-warn { background-color: #fff4e4; color: #b34000; border-left: 4px solid #ff9947; }
     .log-ok { background-color: #e5f6ef; color: #16b378; border-left: 4px solid #16b378; }
 
@@ -97,7 +100,7 @@
       <label>3. Génération</label>
       <div class="target-selector">
         <label><input type="radio" name="scope" value="single" checked> Pour le destinataire sélectionné uniquement</label>
-        <label><input type="radio" name="scope" value="all"> Pour TOUS les destinataires (Archive ZIP)</label>
+        <label><input type="radio" name="scope" value="all"> Pour TOUS les destinataires (Archive ZIP). ⚠ La génération massive au format PDF peut prendre du temps !</label>
       </div>
 
       <div class="button-group">
@@ -272,20 +275,22 @@
     document.getElementById('exportPdfBtn').addEventListener('click', async () => {
       const isAll = document.querySelector('input[name="scope"]:checked').value === 'all';
       
-      // 1. Un conteneur plus robuste avec des dimensions A4 strictes
+      // 1. Un conteneur robuste caché "sous" le widget au lieu d'être hors de l'écran
       const tempContainer = document.createElement('div');
       tempContainer.style.width = '210mm'; // Largeur stricte d'un A4
-      tempContainer.style.backgroundColor = 'white'; // Fond blanc forcé
+      tempContainer.style.minHeight = '297mm'; // Hauteur stricte d'un A4
+      tempContainer.style.backgroundColor = 'white'; 
       tempContainer.style.position = 'absolute'; 
       tempContainer.style.top = '0';
-      tempContainer.style.left = '-20000px'; // Loin hors de l'écran
+      tempContainer.style.left = '0';
+      tempContainer.style.zIndex = '-1000'; // On le cache DERRIÈRE le reste de la page
       document.body.appendChild(tempContainer);
 
       // 2. Options PDF (Marges à 0 car le Word a DÉJÀ ses propres marges)
       const opt = { 
         margin: 0, 
         image: { type: 'jpeg', quality: 0.98 }, 
-        html2canvas: { scale: 2, windowWidth: 800 }, // windowWidth aide à stabiliser la capture
+        html2canvas: { scale: 2, windowWidth: 800 }, 
         jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' } 
       };
 
@@ -298,9 +303,10 @@
         const docData = generateSingleDoc({ ...senderData, ...currentRecipient }, "arraybuffer");
         
         if(docData) {
-          await docx.renderAsync(docData, tempContainer, null, { className: "docx", inWrapper: true, ignoreFonts: true, breakPages: true });
+          // inWrapper en false ici évite d'imprimer la zone d'ombre grise du plugin dans le PDF
+          await docx.renderAsync(docData, tempContainer, null, { className: "docx", inWrapper: false, ignoreFonts: true, breakPages: true });
           
-          await sleep(500); // PAUSE CRUCIALE : on laisse 500ms au navigateur pour peindre le texte
+          await sleep(500); // PAUSE CRUCIALE
           
           opt.filename = `Doc_${currentRecipient.Nom || currentRecipient.Name || 'Document'}.pdf`;
           html2pdf().set(opt).from(tempContainer).save().then(() => {
@@ -322,7 +328,7 @@
             
             if (docData) {
               tempContainer.innerHTML = ''; // Nettoyage avant le prochain doc
-              await docx.renderAsync(docData, tempContainer, null, { className: "docx", inWrapper: true, ignoreFonts: true, breakPages: true });
+              await docx.renderAsync(docData, tempContainer, null, { className: "docx", inWrapper: false, ignoreFonts: true, breakPages: true });
               
               await sleep(500); // PAUSE pour chaque document
               
@@ -340,7 +346,7 @@
         } catch(e) {
            console.error(e);
            showError("❌ Erreur pendant la génération de masse.");
-           document.body.removeChild(tempContainer);
+           if (document.body.contains(tempContainer)) document.body.removeChild(tempContainer);
         }
       }
     });
