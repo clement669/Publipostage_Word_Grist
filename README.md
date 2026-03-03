@@ -33,14 +33,14 @@ Afin que le module puisse accomplir son office, il convient évidemment de lui i
 
 Dans votre document Word, encadrez simplement le nom de la variable souhaitée par de doubles accolades.<br>
 
-*Exemple :* `Nous vous prions d'agréer, Monsieur {{NOM}}, l'expression de nos salutations distinguées.` \
+*Exemple :* `Nous vous prions d'agréer, Monsieur {{NOM}}, l'expression de nos salutations distinguées.`
 > [!WARNING]
 > non testé pour l'instant avec les formats Libre Office / OpenOffice !
 
 **Règles de bon usage :**
 1. L'orthographe doit être d'une rigueur absolue : `{{Prenom}}` n'est pas équivalent à `{{prenom}}`. Le module est sensible aux majuscules et aux minuscules, ainsi qu'aux accents.
 2. <ins>Assurez-vous que les variables invoquées existent bel et bien en tant qu'intitulés de colonnes</ins> dans nos tables Grist (qu'il s'agisse de la table des Expéditeurs ou de celle des Destinataires).
-3. Sauvegardez votre document au format Word "normal" (**.docx**). \
+3. Sauvegardez votre document au format Word "normal" (**.docx**).
 > [!TIP]
 > La version actuellement déployée sur Grist n'est qu'une base assez simpliste, mais l'outil peut être intégré tel quel dans des tables plus complexes sans problème *(certains ajustements simples pourront être nécessaires mais rien de bien sorcier)*.
 ---
