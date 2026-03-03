@@ -81,18 +81,18 @@ Enfin, optez pour le format de votre convenance :
 > [!IMPORTANT]
 > Tout le calcul étant fait localement sur votre machine, si vous fermez l'onglet tout s'arrêtera !
 
-### Le téléchargement du PDF semble figé (Archive ZIP) :
+### :octocat: Le téléchargement du PDF semble figé (Archive ZIP) :
 * La conversion de plusieurs dizaines de documents au format PDF exige un effort substantiel de la part de l'ordinateur *(qui, soyons honnêtes,a déjà facilement du mal qund ce n'est pas le cas)*. Un écran de chargement vous tiendra informé de la progression. Veillez simplement à ne pas fermer la page durant l'opération.
   
-### La mise en page du PDF diffère légèrement du document original :
+### :octocat: La mise en page du PDF diffère légèrement du document original :
 Je vous passe le jargon, mais pour générer les pdf efficacement, j'utilise une petite astuce maison. En gros, je ne convertis pas directement le fichier Word en PDF : le navigateur dessine l'image du document *(bien caché pour ne pas faire moche)* puis transforme cette image en PDF. Dit comme ça, ça peut sembler tiré par les cheveux mais en fait c'est beaaaaaaaucoup plus facile et efficace que de manipuler le fichier Word. Résultat, c'est beaucoup plus rapide, et en principe tout aussi précis, mais il peut arriver qu'une mise en page trop complexe cause des soucis.
 > [!TIP]
 > **Si ça arrive, pas de panique !** Pour la génération au format Word j'utilise un outil différent, donc vous pouvez télécharger en Word, puis convertir en PDF comme vous le faites d'habitude : la mise en forme sera parfaite.
   
-### La mise en page de la prévisualisation diffère du document original :
+### :octocat: La mise en page de la prévisualisation diffère du document original :
 C'est exactement la même chose que le souci ci-dessus[^3]. Si la prévisualisation ne ressemble pas au document original, ne perdez pas de temps à le télécharger au format PDF : téléchargez directement au format Word, en principe il n'y aura aucun problème !
 
-### Une erreur rouge survient inopinément :
+### :octocat: Une erreur rouge survient inopinément :
 Assurez-vous que vous n'avez pas égaré une accolade dans votre document Word (par exemple `{NOM}}` au lieu de `{{NOM}}`), et/ou passez me voir !
 
 [^1]: Outils utilisés : [FileSaver.min.js](https://www.npmjs.com/package/file-saver) ; [docx-preview.min.js](https://www.npmjs.com/package/docx-preview) ; [docxtemplater.js](https://docxtemplater.com/docs/goals/) ; [html2pdf.bundle.min.js](https://github.com/eKoopmans/html2pdf.js/tree/main) ; [jszip.min.js](https://stuk.github.io/jszip/) ; [pizzip.min.js](https://www.jsdelivr.com/package/npm/pizzip).
