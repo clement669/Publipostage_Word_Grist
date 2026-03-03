@@ -19,7 +19,7 @@ Il est légitime, lorsqu'on manipule des données professionnelles ou personnell
 Contrairement aux outils de publipostage externes qui expédient vos informations on ne sait trop où, cet outil fonctionne selon un principe de **traitement strictement local**. 
 * L'intégralité des opérations (lecture du document Word, remplacement des variables, génération des PDF) s'effectue **exclusivement au sein de la mémoire vive de votre propre navigateur web**. 
 * **Aucune donnée**, qu'il s'agisse des noms de vos correspondants, des adresses ou du contenu de vos modèles, ne quitte votre ordinateur ni ne transite par Internet. 
-* Le code du widget a été réalisé par mes soins, et s'appuie sur des bibliothèques OpenSource fiables et connues, intégrées localement dans l'outil (aucun appel à une technologie extérieure n'est réalisé).
+* Le code du widget a été réalisé par mes soins, et s'appuie sur des bibliothèques OpenSource fiables et connues[^2], intégrées localement dans l'outil (aucun appel à une technologie extérieure n'est réalisé).
 * Le widget est hébergé sur GitHub[^1], de façon sécurisée, et ne peut être modifié que par moi-même. Il ne collecte ni ne stocke aucune donnée : rien ne quitte votre ordinateur !
 
 > [!IMPORTANT]
@@ -78,22 +78,25 @@ Enfin, optez pour le format de votre convenance :
 
 ## ❓ Résolution des éventuels *(mais tout petits)* désagréments
 
-### Le téléchargement du PDF semble figé (Archive ZIP) :
-* La conversion de plusieurs dizaines de documents au format PDF exige un effort substantiel de la part de l'ordinateur *(qui, soyons honnêtes,a déjà facilement du mal qund ce n'est pas le cas)*. Un écran de chargement vous tiendra informé de la progression. Veillez simplement à ne pas fermer la page durant l'opération.
 > [!IMPORTANT]
 > Tout le calcul étant fait localement sur votre machine, si vous fermez l'onglet tout s'arrêtera !
+
+### Le téléchargement du PDF semble figé (Archive ZIP) :
+* La conversion de plusieurs dizaines de documents au format PDF exige un effort substantiel de la part de l'ordinateur *(qui, soyons honnêtes,a déjà facilement du mal qund ce n'est pas le cas)*. Un écran de chargement vous tiendra informé de la progression. Veillez simplement à ne pas fermer la page durant l'opération.
   
 ### La mise en page du PDF diffère légèrement du document original :
 Je vous passe le jargon, mais pour générer les pdf efficacement, j'utilise une petite astuce maison. En gros, je ne convertis pas directement le fichier Word en PDF : le navigateur dessine l'image du document *(bien caché pour ne pas faire moche)* puis transforme cette image en PDF. Dit comme ça, ça peut sembler tiré par les cheveux mais en fait c'est beaaaaaaaucoup plus facile et efficace que de manipuler le fichier Word. Résultat, c'est beaucoup plus rapide, et en principe tout aussi précis, mais il peut arriver qu'une mise en page trop complexe cause des soucis.
 > [!TIP]
-> **Si ça arrive, pas de panique !** Pour la génération au format Word j'utilise un outil différent, donc aucun risque : télécharger en Word, puis convertissez en PDF comme vous le faites d'habitude.
+> **Si ça arrive, pas de panique !** Pour la génération au format Word j'utilise un outil différent, donc vous pouvez télécharger en Word, puis convertir en PDF comme vous le faites d'habitude : la mise en forme sera parfaite.
   
 ### La mise en page de la prévisualisation diffère du document original :
-C'est exactement la même chose que le souci ci-dessus *(et pour cause : j'utilise le même outil pur dessiner la prévisualisation que pour le "dessin" qui sert de base au pdf)*. Si la prévisualisation ne ressemble pas au document original, ne perdez pas de temps à le télécharger au format PDF : téléchargez directement au format Word, en principe il n'y aura aucun problème !
+C'est exactement la même chose que le souci ci-dessus[^3]. Si la prévisualisation ne ressemble pas au document original, ne perdez pas de temps à le télécharger au format PDF : téléchargez directement au format Word, en principe il n'y aura aucun problème !
 
 ### Une erreur rouge survient inopinément :
 Assurez-vous que vous n'avez pas égaré une accolade dans votre document Word (par exemple `{NOM}}` au lieu de `{{NOM}}`), et/ou passez me voir !
 
-[^1]: Pour les curieux https://github.com/clement669/Publipostage_Word_Grist
+[^1]: Pour les curieux : [➡lien vers le GitHub](https://github.com/clement669/Publipostage_Word_Grist).
+[^2]: Outils utilisés : [FileSaver.min.js](https://www.npmjs.com/package/file-saver) ; [docx-preview.min.js](https://www.npmjs.com/package/docx-preview) ; [docxtemplater.js](https://docxtemplater.com/docs/goals/) ; [html2pdf.bundle.min.js](https://github.com/eKoopmans/html2pdf.js/tree/main) ; [jszip.min.js](https://stuk.github.io/jszip/) ; [pizzip.min.js](https://www.jsdelivr.com/package/npm/pizzip).
+[^3]: et pour cause : j'utilise le même outil pour dessiner la prévisualisation que pour le "dessin" qui sert de base au pdf !
 ---
-*Outil développé et maintenu par Clément GAGNOT exclusivement destiné à un usage en interne au sein de l'UD28 DREAL.*
+<sub>*Outil développé et maintenu par Clément GAGNOT exclusivement destiné à un usage en interne au sein de l'UD28 DREAL.*</sub>
