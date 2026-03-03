@@ -272,85 +272,97 @@
       }
     });
 
+    // --- EXPORT PDF (Correction Dimensions Iframe Grist) ---
     document.getElementById('exportPdfBtn').addEventListener('click', async () => {
       const isAll = document.querySelector('input[name="scope"]:checked').value === 'all';
       
-      // 1. LE PANNEAU DE CHARGEMENT (La "Cape d'invisibilité")
-      // Ce panneau recouvre tout, mais on dit à html2canvas de l'ignorer !
+      // 1. écran de chargement (cache les opérations à l'utilisateur)
       const overlay = document.createElement('div');
-      overlay.style.cssText = 'position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(255,255,255,0.95); z-index:9999; display:flex; flex-direction:column; align-items:center; justify-content:center; font-size:18px; font-weight:bold; color:#000091; font-family:"Marianne", sans-serif;';
-      overlay.innerHTML = '<div>⏳ Génération du PDF en cours...</div><div style="font-size:14px; color:#666; margin-top:10px;">Veuillez patienter, ne fermez pas la page.</div>';
-      overlay.setAttribute('data-html2canvas-ignore', 'true'); // LA MAGIE EST ICI
+      overlay.style.cssText = 'position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(255,255,255,0.98); z-index:9999; display:flex; flex-direction:column; align-items:center; justify-content:center; font-size:18px; font-weight:bold; color:#000091; font-family:"Marianne", sans-serif;';
+      overlay.innerHTML = '<div>⏳ Génération du PDF en cours...</div><div style="font-size:14px; color:#666; margin-top:10px;">Veuillez patienter...</div>';
+      overlay.setAttribute('data-html2canvas-ignore', 'true');
       document.body.appendChild(overlay);
 
-      // 2. LE CONTENEUR DU DOCUMENT (Affiché normalement sur la page, sous le panneau)
+      // 2. Conteneur temporaire (Placé sous l'overlay, mais dans le flux de la page)
       const tempContainer = document.createElement('div');
-      tempContainer.style.cssText = 'position:absolute; top:0; left:0; width:210mm; background:white; z-index:1; padding:20mm; box-sizing:border-box;';
+      tempContainer.style.cssText = 'position:absolute; top:0; left:0; width:210mm; min-height:297mm; background:white; z-index:9998;';
       document.body.appendChild(tempContainer);
-
-      // Options PDF (On laisse html2canvas prendre sa photo grandeur nature)
-      const opt = { 
-        margin: 0, 
-        image: { type: 'jpeg', quality: 0.98 }, 
-        html2canvas: { scale: 2, useCORS: true }, 
-        jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' } 
-      };
 
       const sleep = (ms) => new Promise(resolve => setTimeout(resolve, ms));
 
-      if (!isAll) {
-        // --- UN SEUL PDF ---
-        const docData = generateSingleDoc({ ...senderData, ...currentRecipient }, "arraybuffer");
-        
-        if(docData) {
-          await docx.renderAsync(docData, tempContainer, null, { className: "docx", inWrapper: false, ignoreFonts: true, breakPages: true });
-          
-          await sleep(800); // Pause légèrement allongée pour garantir le dessin complet
-          
-          opt.filename = `Doc_${currentRecipient.Nom || currentRecipient.Name || 'Document'}.pdf`;
-          html2pdf().set(opt).from(tempContainer).save().then(() => {
-            document.body.removeChild(tempContainer);
-            document.body.removeChild(overlay); // On retire le panneau
-            logMessage("✅ PDF téléchargé.", "log-ok");
-          });
+      // Fonction métier : Génère, dessine et capture un seul document
+      async function processPDF(recipient, isZip = false) {
+        const docData = generateSingleDoc({ ...senderData, ...recipient }, "arraybuffer");
+        if (!docData) return null;
+
+        tempContainer.innerHTML = ''; // Nettoyer avant dessin
+        await docx.renderAsync(docData, tempContainer, null, {
+          className: "docx",
+          inWrapper: false, 
+          ignoreFonts: true,
+          breakPages: true
+        });
+
+        await sleep(800); // Laisser le temps au navigateur de dessiner le texte
+
+        // Cible très exact du bloc créé par docx-preview
+        const elementToPrint = tempContainer.querySelector('.docx') || tempContainer;
+
+        const opt = {
+          margin: 0,
+          filename: `Doc_${recipient.Nom || recipient.Name || 'Document'}.pdf`,
+          image: { type: 'jpeg', quality: 0.98 },
+          html2canvas: { 
+            scale: 2, 
+            useCORS: true,
+            // Capture forcée à prendre les VRAIES dimensions du document Word, 
+            windowWidth: elementToPrint.scrollWidth,
+            windowHeight: elementToPrint.scrollHeight
+          },
+          jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
+        };
+
+        if (isZip) {
+          return await html2pdf().set(opt).from(elementToPrint).outputPdf('blob');
+        } else {
+          await html2pdf().set(opt).from(elementToPrint).save();
+          return true;
         }
-      } else {
-        // --- TOUS LES PDF EN ZIP ---
-        try {
+      }
+
+      // --- EXECUTION ---
+      try {
+        if (!isAll) {
+          // --- UN SEUL PDF ---
+          await processPDF(currentRecipient, false);
+          logMessage("✅ PDF téléchargé avec succès.", "log-ok");
+        } else {
+          // --- TOUS LES PDF (ZIP) ---
           const rawRecipients = await grist.docApi.fetchTable(TABLE_DESTINATAIRES);
           const allRecipients = formatGristData(rawRecipients);
           const zipBundle = new JSZip();
 
           for (let i = 0; i < allRecipients.length; i++) {
             overlay.innerHTML = `<div>⏳ Conversion PDF ${i + 1} sur ${allRecipients.length}...</div>`;
-            const rec = allRecipients[i];
-            const docData = generateSingleDoc({ ...senderData, ...rec }, "arraybuffer");
-            
-            if (docData) {
-              tempContainer.innerHTML = ''; 
-              await docx.renderAsync(docData, tempContainer, null, { className: "docx", inWrapper: false, ignoreFonts: true, breakPages: true });
-              
-              await sleep(800); 
-              
-              const id = rec.Nom || rec.Name || (i+1);
-              const pdfBlob = await html2pdf().set(opt).from(tempContainer).outputPdf('blob');
+            const pdfBlob = await processPDF(allRecipients[i], true);
+            if (pdfBlob) {
+              const id = allRecipients[i].Nom || allRecipients[i].Name || (i+1);
               zipBundle.file(`Doc_${id}.pdf`, pdfBlob);
             }
           }
+          
           overlay.innerHTML = '<div>⏳ Création de l\'archive ZIP...</div>';
           const zipContent = await zipBundle.generateAsync({ type: "blob" });
           saveAs(zipContent, "Publipostage_PDF.zip");
-          
-          document.body.removeChild(tempContainer);
-          document.body.removeChild(overlay);
           logMessage(`✅ Archive ZIP générée avec ${allRecipients.length} PDF.`, "log-ok");
-
-        } catch(e) {
-           console.error(e);
-           showError("❌ Erreur pendant la génération de masse.");
-           if (document.body.contains(tempContainer)) document.body.removeChild(tempContainer);
-           if (document.body.contains(overlay)) document.body.removeChild(overlay);
         }
+      } catch (err) {
+        console.error(err);
+        showError("❌ Erreur pendant la génération PDF.");
+      } finally {
+        // Dans TOUS LES CAS (succès ou erreur), on nettoie l'écran !
+        if (document.body.contains(tempContainer)) document.body.removeChild(tempContainer);
+        if (document.body.contains(overlay)) document.body.removeChild(overlay);
       }
     });
   </script>
