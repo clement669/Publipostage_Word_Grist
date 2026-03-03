@@ -272,18 +272,36 @@
     document.getElementById('exportPdfBtn').addEventListener('click', async () => {
       const isAll = document.querySelector('input[name="scope"]:checked').value === 'all';
       
+      // 1. Un conteneur plus robuste avec des dimensions A4 strictes
       const tempContainer = document.createElement('div');
-      tempContainer.style.position = 'absolute'; tempContainer.style.left = '-9999px';
+      tempContainer.style.width = '210mm'; // Largeur stricte d'un A4
+      tempContainer.style.backgroundColor = 'white'; // Fond blanc forcé
+      tempContainer.style.position = 'absolute'; 
+      tempContainer.style.top = '0';
+      tempContainer.style.left = '-20000px'; // Loin hors de l'écran
       document.body.appendChild(tempContainer);
 
-      const opt = { margin: [15, 15, 15, 15], image: { type: 'jpeg', quality: 0.98 }, html2canvas: { scale: 2 }, jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' } };
+      // 2. Options PDF (Marges à 0 car le Word a DÉJÀ ses propres marges)
+      const opt = { 
+        margin: 0, 
+        image: { type: 'jpeg', quality: 0.98 }, 
+        html2canvas: { scale: 2, windowWidth: 800 }, // windowWidth aide à stabiliser la capture
+        jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' } 
+      };
+
+      // Fonction utilitaire pour créer une pause (laisser le navigateur dessiner)
+      const sleep = (ms) => new Promise(resolve => setTimeout(resolve, ms));
 
       if (!isAll) {
-        // Un seul PDF
+        // --- UN SEUL PDF ---
         logMessage("⏳ Conversion PDF en cours...", "log-warn");
         const docData = generateSingleDoc({ ...senderData, ...currentRecipient }, "arraybuffer");
+        
         if(docData) {
-          await docx.renderAsync(docData, tempContainer, null, { className: "docx", inWrapper: false, ignoreFonts: true, breakPages: true });
+          await docx.renderAsync(docData, tempContainer, null, { className: "docx", inWrapper: true, ignoreFonts: true, breakPages: true });
+          
+          await sleep(500); // PAUSE CRUCIALE : on laisse 500ms au navigateur pour peindre le texte
+          
           opt.filename = `Doc_${currentRecipient.Nom || currentRecipient.Name || 'Document'}.pdf`;
           html2pdf().set(opt).from(tempContainer).save().then(() => {
             document.body.removeChild(tempContainer);
@@ -291,7 +309,7 @@
           });
         }
       } else {
-        // Tous les PDF en ZIP
+        // --- TOUS LES PDF EN ZIP ---
         try {
           const rawRecipients = await grist.docApi.fetchTable(TABLE_DESTINATAIRES);
           const allRecipients = formatGristData(rawRecipients);
@@ -303,11 +321,12 @@
             const docData = generateSingleDoc({ ...senderData, ...rec }, "arraybuffer");
             
             if (docData) {
-              tempContainer.innerHTML = ''; // Reset
-              await docx.renderAsync(docData, tempContainer, null, { className: "docx", inWrapper: false, ignoreFonts: true, breakPages: true });
+              tempContainer.innerHTML = ''; // Nettoyage avant le prochain doc
+              await docx.renderAsync(docData, tempContainer, null, { className: "docx", inWrapper: true, ignoreFonts: true, breakPages: true });
+              
+              await sleep(500); // PAUSE pour chaque document
               
               const id = rec.Nom || rec.Name || (i+1);
-              // outputPdf('blob') pour récupérer le fichier sans déclencher le téléchargement immédiat
               const pdfBlob = await html2pdf().set(opt).from(tempContainer).outputPdf('blob');
               zipBundle.file(`Doc_${id}.pdf`, pdfBlob);
             }
