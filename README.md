@@ -29,8 +29,8 @@ Vous pouvez donc opérer ce module en toute quiétude, même pour le traitement 
 
 Afin que le module puisse accomplir son office, il convient évidemment de lui indiquer les emplacements exacts où insérer les informations issues de la base de données.
 
-Dans votre document Word, encadrez simplement le nom de la variable souhaitée par de doubles accolades. 
-*Exemple :* `Nous vous prions d'agréer, Monsieur {{NOM}}, l'expression de nos salutations distinguées.`
+Dans votre document Word, encadrez simplement le nom de la variable souhaitée par de doubles accolades. \
+*Exemple :* `Nous vous prions d'agréer, Monsieur {{NOM}}, l'expression de nos salutations distinguées.` \
 :warning: ***non testé pour l'instant avec les formats Libre Office / OpenOffice !***
 
 **Règles de bon usage :**
