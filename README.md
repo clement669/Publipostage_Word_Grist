@@ -50,7 +50,7 @@ Dans votre document Word, encadrez simplement le nom de la variable souhaitée p
 L'utilisation du module au sein de Grist a été pensée pour être la plus intuitive possible :
 
 ### Étape 1 : Le chargement
-Cliquez sur le bouton **"Choisir un fichier"** et sélectionnez votre modèle `.docx` fraîchement préparé. Pressez ensuite le bouton **"Lancer l'analyse du document"**. \
+Cliquez sur le bouton **"Choisir un fichier"** et sélectionnez votre modèle `.docx` fraîchement préparé. Pressez ensuite le bouton **"Lancer l'analyse du document"**.
 > [!NOTE]
 > Jusqu'à présent, pour les modèles testés, l'analyse était quasi instantanée. Si ça traîne un peu, n'hésitez pas à me dire !
 
@@ -62,12 +62,12 @@ Le module va ausculter votre document et vous dresser un tableau de bord. Il vou
 ### Étape 3 : La génération
 Il ne vous reste plus qu'à choisir la portée de votre action :
 * **Pour le destinataire sélectionné :** Idéal pour un traitement au cas par cas.
-* **Pour TOUS les destinataires :** Le module générera l'ensemble des documents d'un seul trait et vous les livrera pronto sous la forme d'un dossier compressé (Archive ZIP). \
+* **Pour TOUS les destinataires :** Le module générera l'ensemble des documents d'un seul trait et vous les livrera pronto sous la forme d'un dossier compressé (Archive ZIP).
 > [!TIP]
 > Notez que si la génération de multiples documents est très rapide au format Word, elle peut devenir plus longue pour le format pdf.
 
 Enfin, optez pour le format de votre convenance :
-* **👁 Prévisualiser :** Ouvre une fenêtre pour contrôler l'aspect visuel du document final avant tout téléchargement. *en cas de souci, cf le dernier chapitre de cette documentation 😉*[^1]
+* **👁 Prévisualiser :** Ouvre une fenêtre pour contrôler l'aspect visuel du document final avant tout téléchargement. *en cas de souci, cf le dernier chapitre de cette documentation[^1] 😉* 
 * **📝 Word (.docx) :** Pour générer le document et y apporter d'ultimes retouches manuelles si nécessaire.
 * **📄 PDF (.pdf) :** Pour un document figé, prêt à être signé.
 
@@ -82,10 +82,10 @@ Enfin, optez pour le format de votre convenance :
 > [!IMPORTANT]
 > Tout le calcul étant fait localement sur votre machine, si vous fermez l'onglet tout s'arrêtera !
   
-* **La mise en page du PDF diffère légèrement du document original :** Je vous passe le jargon, mais pour générer les pdf efficacement, j'utilise une petite astuce maison. En gros, je ne convertis pas directement le fichier Word en PDF : le navigateur dessine l'image du document *(bien caché pour ne pas faire moche)* puis transforme cette image en PDF. Dit comme ça, ça peut sembler tiré par les cheveux mais en fait c'est beaaaaaaaucoup plus facile et efficace que de manipuler le fichier Word. Résultat, c'est beaucoup plus rapide, et en principe tout aussi précis, mais il peut arriver qu'une mise en page trop complexe cause des soucis. > [!TIP]
+* **La mise en page du PDF diffère légèrement du document original :** Je vous passe le jargon, mais pour générer les pdf efficacement, j'utilise une petite astuce maison. En gros, je ne convertis pas directement le fichier Word en PDF : le navigateur dessine l'image du document *(bien caché pour ne pas faire moche)* puis transforme cette image en PDF. Dit comme ça, ça peut sembler tiré par les cheveux mais en fait c'est beaaaaaaaucoup plus facile et efficace que de manipuler le fichier Word. Résultat, c'est beaucoup plus rapide, et en principe tout aussi précis, mais il peut arriver qu'une mise en page trop complexe cause des soucis.\ > [!TIP]
 > **Si ça arrive, pas de panique !** Pour la génération au format Word j'utilise un outil différent, donc aucun risque : télécharger en Word, puis convertissez en PDF comme vous le faites d'habitude.
   
-* [^1]**La mise en page de la prévisualisation diffère du document original :** C'est exactement la même chose que le souci ci-dessus *(et pour cause : j'utilise le même outil pur dessiner la prévisualisation que pour le "dessin" qui sert de base au pdf)*. Si la prévisualisation ne ressemble pas au document original, ne perdez pas de temps à le télécharger au format PDF : téléchargez directement au format Word, en principe il n'y aura aucun problème !
+[^1]* **La mise en page de la prévisualisation diffère du document original :** C'est exactement la même chose que le souci ci-dessus *(et pour cause : j'utilise le même outil pur dessiner la prévisualisation que pour le "dessin" qui sert de base au pdf)*. Si la prévisualisation ne ressemble pas au document original, ne perdez pas de temps à le télécharger au format PDF : téléchargez directement au format Word, en principe il n'y aura aucun problème !
 
 * **Une erreur rouge survient inopinément :** Assurez-vous que vous n'avez pas égaré une accolade dans votre document Word (par exemple `{NOM}}` au lieu de `{{NOM}}`), ou passez me voir !
 
