@@ -5,17 +5,18 @@
   <title>Grist - Publipostage Avancé</title>
   
   <script src="https://docs.getgrist.com/grist-plugin-api.js"></script>
+  
   <script src="./pizzip.min.js"></script>
   <script src="./docxtemplater.js"></script>
   <script src="./jszip.min.js"></script>
   <script src="./FileSaver.min.js"></script>
   <script src="./docx-preview.min.js"></script>
+  <script src="./html2pdf.bundle.min.js"></script>
 
   <style>
     @font-face { font-family: 'Marianne'; src: url('Marianne-Regular.woff2') format('woff2'); font-weight: normal; }
     @font-face { font-family: 'Marianne'; src: url('Marianne-Bold.woff2') format('woff2'); font-weight: bold; }
-    @font-face { font-family: 'Marianne'; src: url('Marianne-Light.woff2') format('woff2'); font-weight: 300; }
-    @font-face { font-family: 'Marianne'; src: url('Marianne-ExtraBold.woff2') format('woff2'); font-weight: 800; }
+
     body {
       font-family: 'Marianne', -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
       padding: 15px; background-color: #f4f5f7; color: #1e1e1e; margin: 0;
@@ -26,19 +27,11 @@
     }
     h2 { margin-top: 0; font-size: 18px; color: #000091; border-bottom: 2px solid #000091; padding-bottom: 10px; }
     
-    #error-box {
-      display: none; background-color: #ffe8e5; color: #ce0500;
-      padding: 15px; border-left: 4px solid #ce0500; margin-bottom: 20px;
-      font-size: 14px; line-height: 1.5; border-radius: 4px;
-    }
-
+    #error-box { display: none; background-color: #ffe8e5; color: #ce0500; padding: 15px; border-left: 4px solid #ce0500; margin-bottom: 20px; font-size: 14px; border-radius: 4px; }
+    
     .form-group { margin-bottom: 20px; }
     label { display: block; font-weight: bold; margin-bottom: 8px; font-size: 14px; }
-    input[type="file"] {
-      width: 100%; padding: 10px; box-sizing: border-box;
-      border: 1px dashed #000091; background-color: #f9f8f6; border-radius: 4px;
-      font-family: 'Marianne', sans-serif; cursor: pointer;
-    }
+    input[type="file"] { width: 100%; padding: 10px; box-sizing: border-box; border: 1px dashed #000091; background-color: #f9f8f6; border-radius: 4px; font-family: 'Marianne', sans-serif; cursor: pointer; }
 
     #checker-section { display: none; margin-top: 20px; }
     table { width: 100%; border-collapse: collapse; margin-bottom: 20px; }
@@ -49,50 +42,43 @@
     .status-warn { color: #ff9947; font-weight: bold; }
     .status-missing { color: #ce0500; font-weight: bold; }
 
-    .button-group { display: flex; gap: 10px; }
-    button {
-      flex: 1; border: none; padding: 12px 15px; border-radius: 4px; 
-      cursor: pointer; font-size: 14px; font-weight: bold;
-      font-family: 'Marianne', sans-serif; transition: background 0.2s;
-    }
+    /* UI : Choix de la cible */
+    .target-selector { background: #f9f8f6; padding: 15px; border-radius: 4px; margin-bottom: 15px; border: 1px solid #e5e5e5; }
+    .target-selector label { font-weight: normal; cursor: pointer; display: flex; align-items: center; gap: 10px; margin-bottom: 5px; }
+    .target-selector input[type="radio"] { cursor: pointer; transform: scale(1.2); }
+
+    /* UI Boutons */
+    .button-group { display: flex; gap: 10px; flex-wrap: wrap; }
+    button { flex: 1; min-width: 120px; border: none; padding: 12px 10px; border-radius: 4px; cursor: pointer; font-size: 14px; font-weight: bold; font-family: 'Marianne', sans-serif; transition: background 0.2s; }
+    button:disabled { background-color: #e5e5e5 !important; color: #929292 !important; border-color: #e5e5e5 !important; cursor: not-allowed; }
+    
     .btn-analyze { background-color: #f0f0f0; color: #000091; border: 1px solid #000091; margin-top: 10px; width: 100%; }
     .btn-analyze:hover { background-color: #e3e3fd; }
     .btn-preview { background-color: #e3e3fd; color: #000091; border: 1px solid #000091; }
-    .btn-preview:hover { background-color: #c6c6fa; }
-    .btn-generate { background-color: #000091; color: white; }
-    .btn-generate:hover { background-color: #1212ff; }
+    .btn-preview:hover:not(:disabled) { background-color: #c6c6fa; }
+    .btn-word { background-color: #000091; color: white; }
+    .btn-word:hover:not(:disabled) { background-color: #1212ff; }
+    .btn-pdf { background-color: #ce0500; color: white; }
+    .btn-pdf:hover:not(:disabled) { background-color: #a00400; }
     
-    #log { margin-top: 15px; font-size: 13px; font-weight: bold; }
+    #log { margin-top: 15px; font-size: 14px; font-weight: bold; padding: 10px; border-radius: 4px; }
+    .log-warn { background-color: #fff4e4; color: #b34000; border-left: 4px solid #ff9947; }
+    .log-ok { background-color: #e5f6ef; color: #16b378; border-left: 4px solid #16b378; }
 
-    /* NOUVEAU : Styles pour la fenêtre de prévisualisation */
-    #preview-modal {
-      display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-      background: rgba(0,0,0,0.6); z-index: 1000; padding: 15px; box-sizing: border-box;
-    }
-    .modal-content {
-      background: #ececec; width: 100%; height: 100%; border-radius: 8px;
-      display: flex; flex-direction: column; overflow: hidden; box-shadow: 0 4px 15px rgba(0,0,0,0.2);
-    }
-    .modal-header {
-      padding: 10px 20px; background: white; border-bottom: 1px solid #ddd;
-      display: flex; justify-content: space-between; align-items: center;
-    }
+    /* Modale de prévisualisation */
+    #preview-modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.6); z-index: 1000; padding: 15px; box-sizing: border-box; }
+    .modal-content { background: #ececec; width: 100%; height: 100%; border-radius: 8px; display: flex; flex-direction: column; overflow: hidden; box-shadow: 0 4px 15px rgba(0,0,0,0.2); }
+    .modal-header { padding: 10px 20px; background: white; border-bottom: 1px solid #ddd; display: flex; justify-content: space-between; align-items: center; }
     .modal-header h3 { margin: 0; color: #000091; font-size: 16px; }
-    .btn-close {
-      background: #ce0500; color: white; border: none; padding: 8px 15px;
-      border-radius: 4px; cursor: pointer; font-weight: bold; flex: none; width: auto;
-    }
+    .btn-close { background: #ce0500; color: white; border: none; padding: 8px 15px; border-radius: 4px; cursor: pointer; font-weight: bold; flex: none; width: auto; }
     .btn-close:hover { background: #a00400; }
-    #preview-container {
-      flex: 1; overflow-y: auto; padding: 20px; display: flex; justify-content: center;
-    }
+    #preview-container { flex: 1; overflow-y: auto; padding: 20px; display: flex; justify-content: center; }
   </style>
 </head>
 <body>
 
   <div class="container">
-    <h2>Publipostage Word</h2>
-    
+    <h2>Publipostage Avancé</h2>
     <div id="error-box"></div>
 
     <div class="form-group">
@@ -104,15 +90,20 @@
     <div id="checker-section">
       <label>2. Vérification des variables (Ligne sélectionnée)</label>
       <table id="varTable">
-        <thead>
-          <tr><th>Variable</th><th>Valeur</th><th>Statut</th></tr>
-        </thead>
+        <thead><tr><th>Variable</th><th>Valeur</th><th>Statut</th></tr></thead>
         <tbody></tbody>
       </table>
 
+      <label>3. Génération</label>
+      <div class="target-selector">
+        <label><input type="radio" name="scope" value="single" checked> Pour le destinataire sélectionné uniquement</label>
+        <label><input type="radio" name="scope" value="all"> Pour TOUS les destinataires (Archive ZIP)</label>
+      </div>
+
       <div class="button-group">
         <button id="previewBtn" class="btn-preview">👁 Prévisualiser</button>
-        <button id="generateAllBtn" class="btn-generate">📥 Générer TOUT (.zip)</button>
+        <button id="exportWordBtn" class="btn-word">📝 Word (.docx)</button>
+        <button id="exportPdfBtn" class="btn-pdf">📄 PDF (.pdf)</button>
       </div>
       <div id="log"></div>
     </div>
@@ -121,11 +112,10 @@
   <div id="preview-modal">
     <div class="modal-content">
       <div class="modal-header">
-        <h3>Prévisualisation (Données actuelles)</h3>
+        <h3>Aperçu du document</h3>
         <button class="btn-close" id="closePreviewBtn">Fermer</button>
       </div>
-      <div id="preview-container">
-        </div>
+      <div id="preview-container"></div>
     </div>
   </div>
 
@@ -142,52 +132,47 @@
 
     function showError(htmlMessage) {
       const box = document.getElementById('error-box');
-      box.style.display = 'block';
-      box.innerHTML = htmlMessage;
+      box.style.display = 'block'; box.innerHTML = htmlMessage;
+    }
+    function clearError() { document.getElementById('error-box').style.display = 'none'; }
+    function logMessage(msg, className) {
+      const logDiv = document.getElementById('log');
+      logDiv.textContent = msg; logDiv.className = className;
+      logDiv.style.display = 'block';
     }
 
-    function clearError() {
-      document.getElementById('error-box').style.display = 'none';
-      document.getElementById('error-box').innerHTML = '';
-    }
+    // Gestion de la cible (grise le bouton prévisualiser si "Tous" est coché)
+    const scopeRadios = document.querySelectorAll('input[name="scope"]');
+    scopeRadios.forEach(radio => {
+      radio.addEventListener('change', (e) => {
+        document.getElementById('previewBtn').disabled = (e.target.value === 'all');
+      });
+    });
 
     grist.onRecord(function(record) {
-      if (record) {
-        currentRecipient = record;
-        if (templateBinary) updateCheckerUI();
-      }
+      if (record) { currentRecipient = record; if (templateBinary) updateCheckerUI(); }
     });
 
     document.getElementById('analyzeBtn').addEventListener('click', function() {
-      clearError();
-      const fileInput = document.getElementById('templateFile');
-      const file = fileInput.files[0];
-      
+      clearError(); document.getElementById('log').style.display = 'none';
+      const file = document.getElementById('templateFile').files[0];
       if (!file) { showError("⚠️ Veuillez sélectionner un fichier."); return; }
 
       const reader = new FileReader();
       reader.onload = async function(event) {
         templateBinary = event.target.result;
-        
         try {
           const zip = new PizZip(templateBinary);
-          const doc = new window.docxtemplater(zip, { 
-            paragraphLoop: true, linebreaks: true, delimiters: { start: '{{', end: '}}' }
-          });
-          
+          const doc = new window.docxtemplater(zip, { paragraphLoop: true, linebreaks: true, delimiters: { start: '{{', end: '}}' } });
           const text = doc.getFullText();
           const regex = /\{\{\s*([^{}]+?)\s*\}\}/g;
-          const vars = new Set();
-          let match;
+          const vars = new Set(); let match;
           while ((match = regex.exec(text)) !== null) { vars.add(match[1].trim()); }
           
           variablesInTemplate = Array.from(vars);
           document.getElementById('checker-section').style.display = 'block';
-
           await fetchGristDataAndRefresh();
-        } catch(err) {
-          showError(`❌ <b>Erreur :</b> ${err.message}`);
-        }
+        } catch(err) { showError(`❌ <b>Erreur :</b> ${err.message}`); }
       };
       reader.readAsArrayBuffer(file);
     });
@@ -198,22 +183,17 @@
         const senders = formatGristData(rawSender);
         if(senders.length > 0) senderData = senders[0];
         updateCheckerUI();
-      } catch (err) {
-        showError(`❌ Bloqué par Grist. ID ou droits de la table ${TABLE_EXPEDITEUR} incorrects.`);
-      }
+      } catch (err) { showError(`❌ Impossible de lire la table ${TABLE_EXPEDITEUR}.`); }
     }
 
     function updateCheckerUI() {
       if (!templateBinary) return;
-      const tbody = document.querySelector('#varTable tbody');
-      tbody.innerHTML = '';
+      const tbody = document.querySelector('#varTable tbody'); tbody.innerHTML = '';
       const combinedData = { ...senderData, ...currentRecipient };
-
       variablesInTemplate.forEach(variable => {
         const tr = document.createElement('tr');
         const tdName = document.createElement('td'); tdName.textContent = `{{${variable}}}`;
-        const tdValue = document.createElement('td');
-        const tdStatus = document.createElement('td');
+        const tdValue = document.createElement('td'); const tdStatus = document.createElement('td');
         let value = combinedData[variable];
 
         if (value === undefined || value === null || value === '') {
@@ -223,92 +203,17 @@
         } else {
           tdValue.textContent = value; tdStatus.innerHTML = '<span class="status-ok">✅</span>';
         }
-        tr.appendChild(tdName); tr.appendChild(tdValue); tr.appendChild(tdStatus);
-        tbody.appendChild(tr);
+        tr.appendChild(tdName); tr.appendChild(tdValue); tr.appendChild(tdStatus); tbody.appendChild(tr);
       });
     }
-
-// --- NOUVELLE FONCTION DE PREVISUALISATION ---
-    document.getElementById('previewBtn').addEventListener('click', () => {
-      const combinedData = { ...senderData, ...currentRecipient };
-      
-      // demander un arraybuffer au lieu d'un blob
-      const docData = generateSingleDoc(combinedData, "arraybuffer"); 
-      
-      if (docData) {
-        const modal = document.getElementById('preview-modal');
-        const container = document.getElementById('preview-container');
-        
-        modal.style.display = 'block';
-        container.innerHTML = '<div style="margin-top:50px; font-weight:bold; color:#000091;">Génération de la prévisualisation en cours...</div>';
-        
-        try {
-          docx.renderAsync(docData, container, container, {
-            className: "docx", 
-            inWrapper: true, 
-            ignoreWidth: false, 
-            ignoreHeight: false, 
-            ignoreFonts: true, // Toujours ignorer pour éviter le blocage des polices
-            breakPages: true, 
-          })
-          .then(() => {
-            console.log("Prévisualisation générée avec succès !");
-          })
-          .catch(err => {
-            console.error("Erreur docx-preview :", err);
-            container.innerHTML = `<div style="color:#ce0500; background:#ffe8e5; padding:20px; margin-top:50px;"><b>Erreur lors du rendu :</b> ${err.message}</div>`;
-          });
-        } catch (syncErr) {
-          console.error("Erreur critique :", syncErr);
-          container.innerHTML = `<div style="color:#ce0500; background:#ffe8e5; padding:20px; margin-top:50px;"><b>Erreur critique :</b> ${syncErr.message}</div>`;
-        }
-      }
-    });
-
-    // Fermer la prévisualisation
-    document.getElementById('closePreviewBtn').addEventListener('click', () => {
-      document.getElementById('preview-modal').style.display = 'none';
-      document.getElementById('preview-container').innerHTML = ''; // Nettoyer
-    });
-
-    document.getElementById('generateAllBtn').addEventListener('click', async () => {
-      logMessage("⏳ Génération en cours...", "status-warn");
-      try {
-        const rawRecipients = await grist.docApi.fetchTable(TABLE_DESTINATAIRES);
-        const allRecipients = formatGristData(rawRecipients);
-        const zipBundle = new JSZip();
-        
-        allRecipients.forEach((rec, index) => {
-          const combinedData = { ...senderData, ...rec };
-          const blob = generateSingleDoc(combinedData);
-          if (blob) {
-            const identifier = rec.Nom || rec.Name || (index + 1);
-            zipBundle.file(`Document_${identifier}.docx`, blob);
-          }
-        });
-
-        const zipContent = await zipBundle.generateAsync({ type: "blob" });
-        saveAs(zipContent, "Publipostage_Documents.zip");
-        logMessage(`✅ Archive ZIP générée avec ${allRecipients.length} documents.`, "status-ok");
-      } catch (err) {
-        showError(`❌ Erreur table "${TABLE_DESTINATAIRES}".`);
-      }
-    });
 
     function generateSingleDoc(data, format = "blob") {
       try {
         const zip = new PizZip(templateBinary);
         const doc = new window.docxtemplater(zip, { paragraphLoop: true, linebreaks: true, delimiters: { start: '{{', end: '}}' } });
         doc.render(data);
-        // On retourne le document dans le format demandé (blob par défaut, ou arraybuffer pour la prévisualisation)
-        return doc.getZip().generate({ 
-          type: format, 
-          mimeType: "application/vnd.openxmlformats-officedocument.wordprocessingml.document" 
-        });
-      } catch (error) {
-        showError("❌ Erreur lors de la fusion du document."); 
-        return null;
-      }
+        return doc.getZip().generate({ type: format, mimeType: "application/vnd.openxmlformats-officedocument.wordprocessingml.document" });
+      } catch (error) { showError("❌ Erreur lors de la fusion du document."); return null; }
     }
 
     function formatGristData(gristData) {
@@ -321,11 +226,105 @@
       return rows;
     }
 
-    function logMessage(msg, className) {
-      const logDiv = document.getElementById('log');
-      logDiv.textContent = msg; logDiv.className = className;
-      setTimeout(() => { logDiv.textContent = ''; }, 5000);
-    }
+    // --- ACTIONS DES BOUTONS ---
+
+    document.getElementById('previewBtn').addEventListener('click', () => {
+      const docData = generateSingleDoc({ ...senderData, ...currentRecipient }, "arraybuffer");
+      if (docData) {
+        document.getElementById('preview-modal').style.display = 'block';
+        const container = document.getElementById('preview-container');
+        container.innerHTML = '<div style="margin-top:50px;">Génération...</div>';
+        docx.renderAsync(docData, container, container, { className: "docx", inWrapper: true, ignoreFonts: true, breakPages: true });
+      }
+    });
+
+    document.getElementById('closePreviewBtn').addEventListener('click', () => {
+      document.getElementById('preview-modal').style.display = 'none';
+      document.getElementById('preview-container').innerHTML = '';
+    });
+
+    document.getElementById('exportWordBtn').addEventListener('click', async () => {
+      const isAll = document.querySelector('input[name="scope"]:checked').value === 'all';
+      
+      if (!isAll) {
+        // Un seul Word
+        const blob = generateSingleDoc({ ...senderData, ...currentRecipient });
+        const id = currentRecipient.Nom || currentRecipient.Name || 'Document';
+        if (blob) { saveAs(blob, `Doc_${id}.docx`); logMessage("✅ Word téléchargé.", "log-ok"); }
+      } else {
+        // Tous les Word en ZIP
+        logMessage("⏳ Génération de l'archive Word en cours...", "log-warn");
+        try {
+          const rawRecipients = await grist.docApi.fetchTable(TABLE_DESTINATAIRES);
+          const allRecipients = formatGristData(rawRecipients);
+          const zipBundle = new JSZip();
+          allRecipients.forEach((rec, i) => {
+            const blob = generateSingleDoc({ ...senderData, ...rec });
+            if (blob) zipBundle.file(`Doc_${rec.Nom || rec.Name || (i+1)}.docx`, blob);
+          });
+          const zipContent = await zipBundle.generateAsync({ type: "blob" });
+          saveAs(zipContent, "Publipostage_Word.zip");
+          logMessage(`✅ Archive ZIP générée (${allRecipients.length} fichiers).`, "log-ok");
+        } catch(e) { showError("❌ Erreur de récupération des destinataires."); }
+      }
+    });
+
+    document.getElementById('exportPdfBtn').addEventListener('click', async () => {
+      const isAll = document.querySelector('input[name="scope"]:checked').value === 'all';
+      
+      const tempContainer = document.createElement('div');
+      tempContainer.style.position = 'absolute'; tempContainer.style.left = '-9999px';
+      document.body.appendChild(tempContainer);
+
+      const opt = { margin: [15, 15, 15, 15], image: { type: 'jpeg', quality: 0.98 }, html2canvas: { scale: 2 }, jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' } };
+
+      if (!isAll) {
+        // Un seul PDF
+        logMessage("⏳ Conversion PDF en cours...", "log-warn");
+        const docData = generateSingleDoc({ ...senderData, ...currentRecipient }, "arraybuffer");
+        if(docData) {
+          await docx.renderAsync(docData, tempContainer, null, { className: "docx", inWrapper: false, ignoreFonts: true, breakPages: true });
+          opt.filename = `Doc_${currentRecipient.Nom || currentRecipient.Name || 'Document'}.pdf`;
+          html2pdf().set(opt).from(tempContainer).save().then(() => {
+            document.body.removeChild(tempContainer);
+            logMessage("✅ PDF téléchargé.", "log-ok");
+          });
+        }
+      } else {
+        // Tous les PDF en ZIP
+        try {
+          const rawRecipients = await grist.docApi.fetchTable(TABLE_DESTINATAIRES);
+          const allRecipients = formatGristData(rawRecipients);
+          const zipBundle = new JSZip();
+
+          for (let i = 0; i < allRecipients.length; i++) {
+            logMessage(`⏳ Conversion PDF ${i + 1} sur ${allRecipients.length}...`, "log-warn");
+            const rec = allRecipients[i];
+            const docData = generateSingleDoc({ ...senderData, ...rec }, "arraybuffer");
+            
+            if (docData) {
+              tempContainer.innerHTML = ''; // Reset
+              await docx.renderAsync(docData, tempContainer, null, { className: "docx", inWrapper: false, ignoreFonts: true, breakPages: true });
+              
+              const id = rec.Nom || rec.Name || (i+1);
+              // outputPdf('blob') pour récupérer le fichier sans déclencher le téléchargement immédiat
+              const pdfBlob = await html2pdf().set(opt).from(tempContainer).outputPdf('blob');
+              zipBundle.file(`Doc_${id}.pdf`, pdfBlob);
+            }
+          }
+          logMessage("⏳ Création de l'archive ZIP...", "log-warn");
+          const zipContent = await zipBundle.generateAsync({ type: "blob" });
+          saveAs(zipContent, "Publipostage_PDF.zip");
+          document.body.removeChild(tempContainer);
+          logMessage(`✅ Archive ZIP générée avec ${allRecipients.length} PDF.`, "log-ok");
+
+        } catch(e) {
+           console.error(e);
+           showError("❌ Erreur pendant la génération de masse.");
+           document.body.removeChild(tempContainer);
+        }
+      }
+    });
   </script>
 </body>
 </html>
