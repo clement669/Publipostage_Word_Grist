@@ -6,7 +6,7 @@ Widget Grist permettant une modification rapide de documents word en remplaçant
 Bienvenue sur le manuel d'utilisation du nouvel outil de génération de documents de l'UD ! 
 ## 📜Préface
 Ce module a été minutieusement façonné pour nous permettre de générer des courriers et des actes administratifs de manière automatisée, simultanée et massive, tout en respectant scrupuleusement la charte graphique de l'État et les impératifs de sécurité de notre administration. 
-Cette démarche s'insère dans la mise en oeuvre de la dématérialisation à l'UD, et vise à profiter de la flexibilité et de la puissance de Grist pour s'offrir un petit bonus qui, je l'espère, saura se révéler bien utile pour de futures actions à grande échelle, mais également dans le cadre de la gestion de crise. \
+Cette démarche s'insère dans la mise en oeuvre de la dématérialisation à l'UD, et vise à profiter de la flexibilité et de la puissance de Grist pour s'offrir un petit bonus qui, je l'espère, saura se révéler bien utile pour de futures actions à grande échelle, mais également dans le cadre de la gestion de crise.
 > [!TIP]
 > Je suis disponible pour le faire évoluer au fil de futurs besoins, mais il est conçu pour que vous puissiez en conserver la jouissance même dans l'éventualité de mon départ, *d'où cette documentation la plus exhaustive possible*.
 
@@ -88,8 +88,8 @@ Je vous passe le jargon, mais pour générer les pdf efficacement, j'utilise une
 > [!TIP]
 > **Si ça arrive, pas de panique !** Pour la génération au format Word j'utilise un outil différent, donc aucun risque : télécharger en Word, puis convertissez en PDF comme vous le faites d'habitude.
   
-### [^1]: La mise en page de la prévisualisation diffère du document original :
-C'est exactement la même chose que le souci ci-dessus *(et pour cause : j'utilise le même outil pur dessiner la prévisualisation que pour le "dessin" qui sert de base au pdf)*. Si la prévisualisation ne ressemble pas au document original, ne perdez pas de temps à le télécharger au format PDF : téléchargez directement au format Word, en principe il n'y aura aucun problème !
+### La mise en page de la prévisualisation diffère du document original :
+[^1]: C'est exactement la même chose que le souci ci-dessus *(et pour cause : j'utilise le même outil pur dessiner la prévisualisation que pour le "dessin" qui sert de base au pdf)*. Si la prévisualisation ne ressemble pas au document original, ne perdez pas de temps à le télécharger au format PDF : téléchargez directement au format Word, en principe il n'y aura aucun problème !
 
 ### Une erreur rouge survient inopinément :
 Assurez-vous que vous n'avez pas égaré une accolade dans votre document Word (par exemple `{NOM}}` au lieu de `{{NOM}}`), et/ou passez me voir !
